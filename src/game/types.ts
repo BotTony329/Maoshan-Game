@@ -1,0 +1,343 @@
+/**
+ * 游戏领域共享类型 —— 逻辑层（core/game/data）与渲染层（scenes/render）的共同语言。
+ * 本文件不 import Phaser：整个逻辑层保持引擎无关，可在 vitest 中直接驱动。
+ */
+
+/**
+ * 一局的状态机。
+ * PLAYING 战斗推进；DOORS 关卡结束亮门待选；REWARD 选关卡奖励；其余终态。
+ * （V2 起升级不再打断战斗，三选一挪到关卡切换）
+ */
+/** 局模式：闯幽冥（2 分钟一关、亮门抉择）/ 无尽尸潮（死亡才结算） */
+export type RunMode = 'stages' | 'endless';
+
+/**
+ * 一局的状态机。
+ * PLAYING 战斗推进；DOORS 关卡结束亮门待选；REWARD 选关卡奖励；其余终态。
+ * （V2 起升级不再打断战斗，三选一挪到关卡切换）
+ */
+export type RunState = 'MENU' | 'PLAYING' | 'DOORS' | 'REWARD' | 'SHOP' | 'GAME_OVER';
+
+export type SfxName =
+  | 'shoot' | 'hit' | 'kill' | 'hurt' | 'pickup' | 'levelup'
+  | 'select' | 'thunder' | 'boss' | 'bomb' | 'heal' | 'bell' | 'victory';
+
+// ---------------------------------------------------------------- 武器
+
+export interface WeaponStats {
+  damage: number;   // 单次伤害
+  cooldown: number; // 触发间隔（秒）
+  amount: number;   // 单次数量（弹体数 / 环绕剑数 / 落雷数…）
+  area: number;     // 范围倍率（半径 / 长度）
+  speed: number;    // 弹速 / 转速倍率
+  duration: number; // 持续时间（秒）
+  pierce: number;   // 穿透数
+  knockback: number; // 击退力度（px/s，0 = 无击退）
+}
+
+/** 每一级对基础值的覆盖项；计算时从 Lv1 起逐级叠加合并 */
+export interface WeaponLevelStats extends Partial<WeaponStats> {
+  /** 卡片上展示的升级说明，如 “+1 道符” */
+  note?: string;
+}
+
+export type WeaponBehaviorId =
+  | 'talisman'  // 飞符：朝最近敌人放追踪直线弹
+  | 'orbit'     // 桃木剑：绕体旋转，持续判定
+  | 'aura'      // 糯米阵：跟随玩家的光环，持续伤害+减速
+  | 'coin'      // 铜钱剑：朝移动方向高速穿透重弹
+  | 'mirror'    // 八卦镜：朝敌群方向释放光束
+  | 'bell'      // 镇魂铃：以自身为中心扩张冲击环
+  | 'thunder'   // 天雷符：随机落雷（先警示后判定）
+  | 'ink'       // 墨斗线：螺旋扩散的墨刃
+  | 'bomb'      // 火符：抛射爆裂符，命中爆炸波及范围
+  | 'chain'     // 电符：闪电在敌群间跳跃连击
+  | 'sweep'     // 关刀：朝面朝方向横扫一大片
+  | 'wand'      // 西洋魔杖：自动拐弯的追踪星火
+  | 'curse'     // 蚀魂咒：邪术 DoT，咒死传染（术士专属）
+  | 'nuke';     // 弑神枪：传说神器，定期荡涤全屏
+
+export interface WeaponDef {
+  id: string;
+  name: string;
+  desc: string;
+  behavior: WeaponBehaviorId;
+  maxLevel: number;
+  /** index 0 = Lv1 基础值（全量），其后为每级覆盖 */
+  levels: WeaponLevelStats[];
+  color: number;   // 主题色（渲染层用）
+  texture: string; // 图标贴图键
+  /** true = 仅鬼市出售获得，不进入局内升级池 */
+  marketOnly?: boolean;
+}
+
+// ---------------------------------------------------------------- 被动
+
+/** 玩家最终属性。字段语义：maxHp/regen/armor 为加法，其余为比例加成 */
+export interface PlayerStats {
+  maxHp: number;
+  speed: number;
+  damage: number;
+  area: number;
+  cooldown: number; // 表示“减少比例”，如 0.18 = 冷却缩短 18%
+  regen: number;
+  xpGain: number;
+  armor: number;
+  magnet: number;
+}
+
+export interface PassiveDef {
+  id: string;
+  name: string;
+  desc: string;
+  maxLevel: number;
+  /** 每升一级提供的增量（在基础值上累加） */
+  perLevel: Partial<PlayerStats>;
+  color: number;
+  texture: string;
+  /** true = 仅鬼市出售获得，不进入局内升级池 */
+  marketOnly?: boolean;
+}
+
+// ---------------------------------------------------------------- 敌人
+
+export type EnemyBehaviorId =
+  | 'chase'        // 直线追击
+  | 'hop'          // 僵尸跳：蓄力→跳跃爆发
+  | 'drift'        // 飘行（飞行怪，带横向摆动）
+  | 'dash'         // 罗刹：接近后蓄力突进
+  | 'ranged'       // 狐妖：保持距离喷火球
+  | 'boss_hangu'   // 旱魃：召唤+环状弹幕
+  | 'boss_shiwang'; // 尸王：冲锋+震地环
+
+export interface EnemyDef {
+  id: string;
+  name: string;
+  hp: number;
+  speed: number;
+  damage: number;
+  radius: number;
+  xp: number;
+  behavior: EnemyBehaviorId;
+  texture: string;
+  scale?: number;
+  boss?: boolean;
+  /** 0=全额击退，1=免疫击退 */
+  knockbackResist?: number;
+}
+
+export interface Enemy {
+  active: boolean;
+  def: EnemyDef;
+  x: number; y: number;
+  vx: number; vy: number;
+  /** 每帧重算的基础移速（Elite 会被压低速） */
+  speed: number;
+  radius: number;
+  hp: number; maxHp: number;
+  /** 出生时按分钟数缩放过的倍率，Boss 不缩放 */
+  hpScale: number;
+  elite: boolean;
+  damage: number;
+  /** 各武器实例的命中冷却表：slotKey -> 下次可被该武器命中的世界时间 */
+  hitCd: Map<string, number>;
+  slowFactor: number;
+  slowUntil: number;
+  knockX: number; knockY: number;
+  flash: number; // 受击白闪剩余时间（渲染层读）
+  /** 行为策略的私有状态（跳跃计时、突进阶段等） */
+  ai: Record<string, number>;
+  /** 蚀魂咒（术士邪恶巫术）：持续侵蚀伤害，死亡时向邻近扩散 */
+  curseDps: number;
+  curseUntil: number;
+  curseAcc: number;
+  /** 最后一击的来源标记（如 'pet'），击杀结算按来源特判 */
+  lastHitSource: string;
+}
+
+/** 灵犬宠物（猎人道途）：无敌单位，扑咬最近之敌，无人可咬时跟随主人 */
+export interface Pet {
+  x: number; y: number;
+  vx: number; vy: number;
+  faceX: number; faceY: number;
+}
+
+// ---------------------------------------------------------------- 关卡与门
+
+/** 门种：关卡结束后亮出的抉择 */
+export type DoorId = 'next' | 'supply' | 'mob' | 'boss' | 'shop';
+
+export interface DoorDef {
+  id: DoorId;
+  name: string;
+  desc: string;
+  color: number;
+}
+
+/** 关卡主题：从人间一路杀穿地府，末境之后进入轮回炼狱循环 */
+export interface StageTheme {
+  name: string;
+  /** 场景染色（叠在地面上的氛围色） */
+  tint: number;
+}
+
+// ---------------------------------------------------------------- 道途与宝珠（鬼市独家内容）
+
+/** 职业定义：改变起手武器、外观与一项天赋 */
+export interface ClassDef {
+  id: string;
+  name: string;
+  /** 一句话定位 */
+  title: string;
+  /** 天赋说明（卡片展示用） */
+  trait: string;
+  price: number; // 0 = 免费默认
+  color: number;
+  texture: string;   // 皮肤贴图键
+  startWeapon: string; // 起手武器 id（兜底飞符）
+}
+
+/** 宝珠定义：鬼市独家机制道具，一局至多携带 ORB_CAP 颗 */
+export interface OrbDef {
+  id: string;
+  name: string;
+  desc: string;
+  price: number;
+  color: number;
+  texture: string;
+}
+
+// ---------------------------------------------------------------- 弹幕与区域
+
+export type ProjectileKind = 'talisman' | 'coin' | 'fireball' | 'ink' | 'fire' | 'wand' | 'curse';
+
+export interface Projectile {
+  active: boolean;
+  kind: ProjectileKind;
+  x: number; y: number;
+  vx: number; vy: number;
+  radius: number;
+  damage: number;
+  pierce: number;
+  life: number;
+  rotation: number;
+  /** 已命中的敌人集合，防止同一弹对同一目标多次结算 */
+  hit: Set<Enemy>;
+  friendly: boolean; // false = 敌方弹幕（狐妖火球）
+  color: number;
+  /** >0 = 命中（或到寿）时的爆裂半径（火符） */
+  blast: number;
+  /** >0 = 每秒可拐向最近敌人的转向弧度（西洋魔杖） */
+  homing: number;
+}
+
+export type HazardKind = 'aura' | 'ring' | 'beam' | 'strike' | 'spiral' | 'chain' | 'sweep';
+
+/**
+ * 区域效果统一抽象：光环、冲击环、光束、落雷、螺旋全部归一为
+ * “带生命周期的圆形/线段判定体”，由 World.updateHazards 统一推进与结算。
+ */
+export interface Hazard {
+  active: boolean;
+  kind: HazardKind;
+  x: number; y: number;
+  follow: boolean;        // true = 每帧吸附到玩家位置（糯米阵/桃木剑中心）
+  r: number;              // 当前判定半径
+  maxR: number;           // ring 的最终半径 / beam 的长度
+  width: number;          // beam 半宽 / strike 警示半径等次要尺寸
+  angle: number;          // beam 方向、spiral 当前角
+  spin: number;           // spiral 角速度
+  damage: number;
+  t: number; dur: number; // 已持续 / 总时长
+  tickEvery: number;      // 对同一敌人的重复判定间隔；0 = 只判一次
+  slow: number;           // 命中减速比例
+  knockback: number;
+  color: number;
+  data: number;           // 行为自由量（strike 是否已落下 / spiral 臂数…）
+  /** true = 伤害玩家（尸王震地环）；false = 伤害敌人 */
+  hostile: boolean;
+  hitCd: Map<Enemy, number>;
+  /** chain：闪电跳跃路径；sweep：无额外用途（角度/半径用 angle/r） */
+  points?: { x: number; y: number }[];
+}
+
+/** 伤害飘字（逻辑层产生真实数值，渲染层负责展示与销毁） */
+export interface Floater {
+  x: number;
+  y: number;
+  amount: number;
+  t: number;
+}
+
+export type PickupKind = 'xp' | 'heal' | 'bomb';
+
+export interface Pickup {
+  active: boolean;
+  kind: PickupKind;
+  x: number; y: number;
+  value: number;
+  t: number; // 存在时长（浮动动画用）
+}
+
+// ---------------------------------------------------------------- 玩家
+
+export interface WeaponSlot {
+  def: WeaponDef;
+  level: number;
+  timer: number;                  // 行为自主管理的冷却计时
+  state: Record<string, number>;  // 行为私有状态（环绕角、螺旋角等）
+  /** 渲染层用于区分同武器多个实例的稳定序号 */
+  instance: number;
+}
+
+export interface Player {
+  x: number; y: number;
+  radius: number;
+  hp: number;
+  level: number;
+  xp: number;
+  xpToNext: number;
+  invuln: number;
+  faceX: number; faceY: number; // 最后移动方向（铜钱剑发射方向）
+  weapons: WeaponSlot[];
+  passives: Map<string, number>;
+  stats: PlayerStats;
+}
+
+// ---------------------------------------------------------------- 升级三选一
+
+export type UpgradeOption =
+  | { kind: 'weapon-new'; id: string }
+  | { kind: 'weapon-upgrade'; id: string; fromLevel: number }
+  | { kind: 'passive-new'; id: string }
+  | { kind: 'passive-upgrade'; id: string; fromLevel: number }
+  | { kind: 'heal' }
+  | { kind: 'bomb' };
+
+// ---------------------------------------------------------------- 波次
+
+export interface SpawnRule {
+  enemy: string;
+  /** 生成间隔（秒） */
+  every: number;
+  /** 每次生成的数量 */
+  batch: number;
+}
+
+export interface WavePhase {
+  fromMin: number;
+  rules: SpawnRule[];
+  /** 敌人血量按分钟数的额外缩放（叠加在全局成长曲线上） */
+  hpScale: number;
+  maxEnemies: number;
+}
+
+export type TimedEventType = 'boss' | 'horde' | 'victory';
+
+export interface TimedEvent {
+  /** 触发时刻（秒） */
+  at: number;
+  type: TimedEventType;
+  enemy?: string;
+  count?: number;
+}
