@@ -4,8 +4,7 @@ import { AUTOTEST } from '../render/autotest';
 import { loadSave, openAccount } from '../game/save';
 import { session } from '../game/session';
 import { CLASSES } from '../data/classes';
-
-const FONT = '"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif';
+import { addFramedPanel, UI_FONT } from '../render/ui-theme';
 
 type Mode = 'stages' | 'endless';
 
@@ -38,7 +37,7 @@ export class MenuScene extends Phaser.Scene {
     this.bgImg.setScale(this.bgScale);
     // 顶对齐 + 轻微下沉：保住左上账本面板与最底一扇按钮（画面裁掉的是底部留白）
     this.bgOX = (width - this.bgImg.width * this.bgScale) / 2;
-    this.bgOY = -10;
+    this.bgOY = -16;
     this.bgImg.setPosition(this.bgOX, this.bgOY);
 
     const mx = (ix: number) => ix * this.bgScale + this.bgOX;
@@ -81,7 +80,7 @@ export class MenuScene extends Phaser.Scene {
 
     this.add
       .text(width - 14, height - 10, 'v0.2', {
-        fontFamily: FONT, fontSize: '11px', color: '#4a5a46',
+        fontFamily: UI_FONT, fontSize: '11px', color: '#667164',
       })
       .setOrigin(1, 1);
 
@@ -104,35 +103,31 @@ export class MenuScene extends Phaser.Scene {
   private renderLedger(mx: (n: number) => number, my: (n: number) => number): void {
     const save = loadSave();
     const fmt = (t: number) => `${String(Math.floor(t / 60)).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}`;
-    const x1 = mx(20);
-    const y1 = my(20);
-    const w = mx(294) - x1;
-    const h = my(216) - y1;
+    const x1 = mx(24);
+    const y1 = my(24);
+    const w = mx(324) - x1;
+    const h = my(214) - y1;
 
-    const g = this.add.graphics();
-    g.fillStyle(0x14100c, 0.97).fillRoundedRect(x1, y1, w, h, 10);
-    g.lineStyle(2, 0xd8b74a, 0.9).strokeRoundedRect(x1, y1, w, h, 10);
-    g.lineStyle(1, 0xd8b74a, 0.45).strokeRoundedRect(x1 + 5, y1 + 5, w - 10, h - 10, 7);
+    addFramedPanel(this, { x: x1, y: y1, width: w, height: h, tone: 'gold', alpha: 0.985, radius: 9 });
 
     const row = (y: number, icon: string | null, text: string, color: string) => {
       const tx = this.add.text(x1 + 16, y, text, {
-        fontFamily: FONT, fontSize: '17px', color, stroke: '#0a0806', strokeThickness: 3,
+        fontFamily: UI_FONT, fontSize: '16px', color, stroke: '#0a0806', strokeThickness: 3,
       });
       if (icon) {
-        const ic = this.add.image(x1 + 30, y + 10, icon).setScale(0.7);
+        const ic = this.add.image(x1 + 28, y + 10, icon).setScale(0.62);
         tx.setX(x1 + 52);
         void ic;
       }
     };
-    const rowY = [y1 + 22, y1 + 80, y1 + 138];
+    const rowY = [y1 + 18, y1 + 61, y1 + 104];
     row(rowY[0], 'icon_gold', `铜钱 ${save.gold}`, '#ffd88a');
-    row(rowY[1], null, `📖 闯关最佳 ${fmt(save.bestClassicTime)}`, '#d8d0b8');
-    row(rowY[2], null, `💀 无尽最佳 ${fmt(save.bestEndlessTime)}`, '#d8d0b8');
+    row(rowY[1], 'icon_scripture', `闯关最佳 ${fmt(save.bestClassicTime)}`, '#d8d0b8');
+    row(rowY[2], 'icon_curse', `无尽最佳 ${fmt(save.bestEndlessTime)}`, '#d8d0b8');
 
-    // 当前道途（小字缀在账本下沿）
     this.add
-      .text(x1 + 4, y1 + h + 12, `当前道途：${CLASSES[save.activeClass]?.name ?? '茅山道士'}`, {
-        fontFamily: FONT, fontSize: '13px', color: '#9fd88f', stroke: '#0a0806', strokeThickness: 3,
+      .text(x1 + 18, y1 + h - 19, `当前道途  ·  ${CLASSES[save.activeClass]?.name ?? '茅山道士'}`, {
+        fontFamily: UI_FONT, fontSize: '12px', color: '#9fd88f', stroke: '#0a0806', strokeThickness: 3,
       });
   }
 
@@ -159,7 +154,7 @@ export class MenuScene extends Phaser.Scene {
     const { width, height } = this.scale;
     const t = this.add
       .text(width / 2, height - 90, msg, {
-        fontFamily: FONT, fontSize: '18px', color: '#ffe9b0', stroke: '#0a0806', strokeThickness: 5,
+        fontFamily: UI_FONT, fontSize: '18px', color: '#ffe9b0', stroke: '#0a0806', strokeThickness: 5,
         align: 'center',
       })
       .setOrigin(0.5)

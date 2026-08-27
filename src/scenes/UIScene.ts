@@ -3,10 +3,9 @@ import { session } from '../game/session';
 import { PASSIVES } from '../data/passives';
 import { stageTheme } from '../data/config';
 import type { Player, WeaponSlot } from '../game/types';
+import { addFramedPanel, UI_FONT } from '../render/ui-theme';
 
 type Txt = Phaser.GameObjects.Text;
-
-const FONT = '"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif';
 
 /** HUD 覆盖层：经验条 / 计时 / 击杀 / 血条 / 法器栏 / Boss 条 / 受击红晕 */
 export class UIScene extends Phaser.Scene {
@@ -36,38 +35,44 @@ export class UIScene extends Phaser.Scene {
   create(): void {
     const { width, height } = this.scale;
 
-    // 顶部经验条
-    this.add.rectangle(0, 0, width, 18, 0x141a14).setOrigin(0);
-    this.xpFill = this.add.rectangle(0, 2, 0, 14, 0xe8c33c).setOrigin(0);
-    this.levelText = this.add.text(12, 24, '', {
-      fontFamily: FONT, fontSize: '17px', color: '#ffd88a', stroke: '#141a14', strokeThickness: 4,
+    addFramedPanel(this, { x: 8, y: 22, width: 232, height: 86, tone: 'gold', alpha: 0.82, radius: 8, depth: -1 });
+    addFramedPanel(this, { x: width / 2 - 156, y: 22, width: 312, height: 72, tone: 'gold', alpha: 0.8, radius: 8, depth: -1 });
+    addFramedPanel(this, { x: width - 164, y: 22, width: 156, height: 48, tone: 'red', alpha: 0.82, radius: 8, depth: -1 });
+
+    // 顶部道行条保留通栏读数，但加双层边线避免融入深色地面。
+    this.add.rectangle(0, 0, width, 18, 0x090c0b, 0.96).setOrigin(0);
+    this.xpFill = this.add.rectangle(2, 3, 0, 12, 0xe8c33c).setOrigin(0);
+    this.add.rectangle(width / 2, 9, width - 4, 14, 0x000000, 0).setStrokeStyle(1, 0xd8b74a, 0.52);
+    this.levelText = this.add.text(16, 28, '', {
+      fontFamily: UI_FONT, fontSize: '17px', color: '#ffd88a', stroke: '#141a14', strokeThickness: 4,
     });
 
     this.timeText = this.add
       .text(width / 2, 30, '00:00', {
-        fontFamily: FONT, fontSize: '30px', color: '#f0e8d0', stroke: '#141a14', strokeThickness: 6,
+        fontFamily: UI_FONT, fontSize: '30px', color: '#f0e8d0', stroke: '#141a14', strokeThickness: 6,
       })
       .setOrigin(0.5, 0);
     this.stageText = this.add
       .text(width / 2, 64, '', {
-        fontFamily: FONT, fontSize: '14px', color: '#d8c890', stroke: '#141a14', strokeThickness: 4,
+        fontFamily: UI_FONT, fontSize: '14px', color: '#d8c890', stroke: '#141a14', strokeThickness: 4,
       })
       .setOrigin(0.5, 0);
 
     this.killText = this.add
-      .text(width - 14, 30, '', {
-        fontFamily: FONT, fontSize: '20px', color: '#d8b0a0', stroke: '#141a14', strokeThickness: 4,
+      .text(width - 22, 33, '', {
+        fontFamily: UI_FONT, fontSize: '18px', color: '#ffb0a0', stroke: '#141a14', strokeThickness: 4,
       })
       .setOrigin(1, 0);
 
     this.buildRows = this.add.container(0, 0);
 
-    // 底部血条
-    this.add.rectangle(width / 2, height - 34, 330, 26, 0x141a14, 0.85).setStrokeStyle(2, 0x3a443a);
-    this.hpFill = this.add.rectangle(width / 2 - 161, height - 34, 318, 20, 0x7fd88f).setOrigin(0, 0.5);
+    addFramedPanel(this, { x: width / 2 - 194, y: height - 60, width: 388, height: 48, tone: 'jade', alpha: 0.9, radius: 10, depth: -1 });
+    this.add.image(width / 2 - 169, height - 36, 'icon_heal').setScale(0.72);
+    this.add.rectangle(width / 2 + 10, height - 36, 326, 24, 0x0b100d, 0.92).setStrokeStyle(2, 0x55705d);
+    this.hpFill = this.add.rectangle(width / 2 - 151, height - 36, 318, 18, 0x7fd88f).setOrigin(0, 0.5);
     this.hpText = this.add
-      .text(width / 2, height - 34, '', {
-        fontFamily: FONT, fontSize: '15px', color: '#f0e8d0', stroke: '#141a14', strokeThickness: 3,
+      .text(width / 2 + 10, height - 36, '', {
+        fontFamily: UI_FONT, fontSize: '15px', color: '#f0e8d0', stroke: '#141a14', strokeThickness: 3,
       })
       .setOrigin(0.5);
 
@@ -76,14 +81,14 @@ export class UIScene extends Phaser.Scene {
     const bossBg = this.add.rectangle(0, 0, 560, 20, 0x141a14, 0.9).setStrokeStyle(2, 0x7a2430);
     this.bossFill = this.add.rectangle(-274, 0, 544, 14, 0xc23b3a).setOrigin(0, 0.5);
     this.bossName = this.add
-      .text(0, -24, '', { fontFamily: FONT, fontSize: '17px', color: '#ffb0a0', stroke: '#141a14', strokeThickness: 4 })
+      .text(0, -24, '', { fontFamily: UI_FONT, fontSize: '17px', color: '#ffb0a0', stroke: '#141a14', strokeThickness: 4 })
       .setOrigin(0.5, 1);
     this.bossBar.add([bossBg, this.bossFill, this.bossName]);
 
     // Boss 现身横幅
     this.banner = this.add
       .text(width / 2, 210, '', {
-        fontFamily: FONT, fontSize: '44px', color: '#ff8a7a', stroke: '#141a14', strokeThickness: 9,
+        fontFamily: UI_FONT, fontSize: '44px', color: '#ff8a7a', stroke: '#141a14', strokeThickness: 9,
       })
       .setOrigin(0.5)
       .setAlpha(0);
@@ -93,7 +98,7 @@ export class UIScene extends Phaser.Scene {
 
     this.add
       .text(12, height - 12, 'WASD 移动 · M 静音 · ESC 暂停', {
-        fontFamily: FONT, fontSize: '12px', color: '#6a7a66',
+        fontFamily: UI_FONT, fontSize: '12px', color: '#748073', stroke: '#0b0f0c', strokeThickness: 2,
       })
       .setOrigin(0, 1);
   }
@@ -165,7 +170,7 @@ export class UIScene extends Phaser.Scene {
       const bg = this.add.rectangle(x, y, 28, 28, 0x141a14, 0.85).setStrokeStyle(1.5, color, 0.9);
       const img = this.add.image(x, y, icon).setScale(0.78);
       const lv = this.add.text(x + 9, y + 9, String(level), {
-        fontFamily: FONT, fontSize: '11px', color: '#ffd88a', stroke: '#141a14', strokeThickness: 2,
+        fontFamily: UI_FONT, fontSize: '11px', color: '#ffd88a', stroke: '#141a14', strokeThickness: 2,
       });
       this.buildRows.add([bg, img, lv]);
     };

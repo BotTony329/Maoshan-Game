@@ -5,8 +5,13 @@ import { MASKS, MASK_MAX_LEVEL, maskPrice } from '../data/masks';
 import { GODSLAYER_PRICE } from '../data/finance';
 import { buy, selectClass, toggleOrb, loadSave, buyLegendary, buyMask } from '../game/save';
 import { sfx } from '../render/sfx';
-
-const FONT = '"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif';
+import {
+  addBackButton,
+  addFramedPanel,
+  addSceneTitle,
+  addScreenBackdrop,
+  UI_FONT as FONT,
+} from '../render/ui-theme';
 
 /**
  * 鬼市 —— 分页商店：
@@ -23,20 +28,12 @@ export class GhostMarketScene extends Phaser.Scene {
   }
 
   create(): void {
-    const { width, height } = this.scale;
-    this.cameras.main.setBackgroundColor('#120c16');
+    const { width } = this.scale;
+    addScreenBackdrop(this, 'purple');
+    addSceneTitle(this, '鬼  市', '只卖修行路上得不着的东西', 'purple');
+    addFramedPanel(this, { x: 48, y: 158, width: width - 96, height: 438, tone: 'purple', alpha: 0.72, radius: 14, depth: -1 });
 
-    this.add
-      .text(width / 2, 40, '—— 鬼  市 ——', {
-        fontFamily: FONT, fontSize: '36px', color: '#c8a0e8', stroke: '#141a14', strokeThickness: 8,
-      })
-      .setOrigin(0.5);
-    this.add
-      .text(width / 2, 78, '卖的全是修行路上得不着的东西。', {
-        fontFamily: FONT, fontSize: '13px', color: '#8a7a96',
-      })
-      .setOrigin(0.5);
-
+    addFramedPanel(this, { x: width - 196, y: 18, width: 164, height: 46, tone: 'gold', alpha: 0.92, radius: 9 });
     this.goldText = this.add.text(width - 62, 36, '', {
       fontFamily: FONT, fontSize: '21px', color: '#ffd88a', stroke: '#141a14', strokeThickness: 5,
     }).setOrigin(1, 0.5);
@@ -45,12 +42,7 @@ export class GhostMarketScene extends Phaser.Scene {
     this.makeTab('闯关 · 鬼面具', width / 2 - 130, 'stages');
     this.makeTab('无尽 · 道途与宝珠', width / 2 + 130, 'endless');
 
-    const back = this.add.text(72, height - 36, '← 回主菜单', {
-      fontFamily: FONT, fontSize: '18px', color: '#c8b8a0',
-    }).setInteractive({ useHandCursor: true });
-    back.on('pointerover', () => back.setColor('#ffe9b0'));
-    back.on('pointerout', () => back.setColor('#c8b8a0'));
-    back.on('pointerdown', () => {
+    addBackButton(this, () => {
       sfx.play('select');
       this.scene.start('Menu');
     });
@@ -94,12 +86,12 @@ export class GhostMarketScene extends Phaser.Scene {
   private renderMasks(): void {
     const { width } = this.scale;
     const save = loadSave();
-    this.add.text(72, 168, '【鬼面具】闯幽冥专属人物强化 —— 买下常驻生效，等级越高加成越猛', {
+    this.add.text(72, 176, '【鬼面具】闯幽冥专属人物强化 —— 买下常驻生效，等级越高加成越猛', {
       fontFamily: FONT, fontSize: '16px', color: '#d8c890',
     });
 
     const cw = 182;
-    const ch = 240;
+    const ch = 320;
     const gap = 12;
     const n = MASKS.length;
     const startX = width / 2 - (cw * n + gap * (n - 1)) / 2;
@@ -108,25 +100,25 @@ export class GhostMarketScene extends Phaser.Scene {
       const lv = save.masks[m.id] ?? 0;
       const maxed = lv >= MASK_MAX_LEVEL;
       const cx = startX + cw / 2 + i * (cw + gap);
-      const cy = 300;
+      const cy = 360;
       const card = this.add.container(cx, cy);
       const bg = this.add.graphics();
       bg.fillStyle(0x1c1520, 0.97).fillRoundedRect(-cw / 2, -ch / 2, cw, ch, 12);
       bg.lineStyle(2.5, m.color, 0.9).strokeRoundedRect(-cw / 2, -ch / 2, cw, ch, 12);
 
-      const icon = this.add.image(0, -ch / 2 + 58, m.icon).setScale(2.2);
-      const name = this.add.text(0, -ch / 2 + 104, m.name, {
+      const icon = this.add.image(0, -ch / 2 + 72, m.icon).setScale(2.65);
+      const name = this.add.text(0, -ch / 2 + 128, m.name, {
         fontFamily: FONT, fontSize: '19px', color: '#f0e8d0', stroke: '#141a14', strokeThickness: 4,
       }).setOrigin(0.5);
-      const per = this.add.text(0, -ch / 2 + 126, m.perLevel, {
+      const per = this.add.text(0, -ch / 2 + 152, m.perLevel, {
         fontFamily: FONT, fontSize: '14px', color: '#c8e8c0',
       }).setOrigin(0.5);
-      const desc = this.add.text(0, 30, m.desc, {
-        fontFamily: FONT, fontSize: '12px', color: '#8a7a96', align: 'center',
+      const desc = this.add.text(0, 20, m.desc, {
+        fontFamily: FONT, fontSize: '13px', color: '#a99bb0', align: 'center',
         wordWrap: { width: cw - 28 },
       }).setOrigin(0.5, 0);
 
-      const pips = this.add.text(0, 72, '◆'.repeat(lv) + '◇'.repeat(MASK_MAX_LEVEL - lv), {
+      const pips = this.add.text(0, 92, '◆'.repeat(lv) + '◇'.repeat(MASK_MAX_LEVEL - lv), {
         fontFamily: FONT, fontSize: '13px', color: '#c8a0e8',
       }).setOrigin(0.5);
 
@@ -165,11 +157,11 @@ export class GhostMarketScene extends Phaser.Scene {
     const { width } = this.scale;
     this.renderLegendary(width);
 
-    this.add.text(72, 168, '【道途】择一入世', {
+    this.add.text(72, 210, '【道途】择一入世', {
       fontFamily: FONT, fontSize: '16px', color: '#d8c890',
     });
     this.renderClasses();
-    this.add.text(72, 352, `【宝珠】携带 ≤ ${ORB_CAP} 颗（点击勾选/取消）`, {
+    this.add.text(72, 412, `【宝珠】携带 ≤ ${ORB_CAP} 颗（点击勾选/取消）`, {
       fontFamily: FONT, fontSize: '16px', color: '#d8c890',
     });
     this.renderOrbs();
@@ -178,7 +170,7 @@ export class GhostMarketScene extends Phaser.Scene {
   private renderLegendary(width: number): void {
     const save = loadSave();
     const owned = save.legendary.includes('godslayer');
-    const strip = this.add.container(width / 2, 116);
+    const strip = this.add.container(width / 2, 176);
     const bg = this.add.graphics();
     bg.fillStyle(0x2a2010, 0.95).fillRoundedRect(-560, -16, 1120, 32, 8);
     bg.lineStyle(1.5, 0xffd24a, owned ? 0.9 : 0.55).strokeRoundedRect(-560, -16, 1120, 32, 8);
@@ -215,7 +207,7 @@ export class GhostMarketScene extends Phaser.Scene {
       const owned = cls.price === 0 || save.classes.includes(cls.id);
       const active = save.activeClass === cls.id;
       const cx = startX + cw / 2 + i * (cw + gap);
-      const cy = 268;
+      const cy = 310;
       const card = this.add.container(cx, cy);
       const bg = this.add.graphics();
       bg.fillStyle(active ? 0x22301c : 0x1c1520, 0.97).fillRoundedRect(-cw / 2, -ch / 2, cw, ch, 12);
@@ -284,7 +276,7 @@ export class GhostMarketScene extends Phaser.Scene {
       const owned = save.orbs.includes(orb.id);
       const equipped = save.equippedOrbs.includes(orb.id);
       const cx = startX + cw / 2 + i * (cw + gap);
-      const cy = 462;
+      const cy = 500;
       const card = this.add.container(cx, cy);
       const bg = this.add.graphics();
       bg.fillStyle(equipped ? 0x22301c : 0x1c1520, 0.97).fillRoundedRect(-cw / 2, -ch / 2, cw, ch, 12);
@@ -333,7 +325,7 @@ export class GhostMarketScene extends Phaser.Scene {
       this.tweens.add({ targets: card, scale: 1, duration: 170, delay: 200 + i * 60, ease: 'Back.easeOut' });
     });
 
-    this.add.text(width - 72, 352, `已携带 ${save.equippedOrbs.length}/${ORB_CAP}`, {
+    this.add.text(width - 72, 412, `已携带 ${save.equippedOrbs.length}/${ORB_CAP}`, {
       fontFamily: FONT, fontSize: '14px', color: '#9fd88f',
     }).setOrigin(1, 0);
   }

@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "style": "阴间民俗 × 萌系志怪",
+  "assets": {
+    "player_taoist": "characters/player_taoist.png",
+    "enemy_jiangshi": "characters/enemy_jiangshi.png",
+    "enemy_hopper": "characters/enemy_hopper.png",
+    "enemy_flying": "characters/enemy_flying.png",
+    "enemy_white": "characters/enemy_white.png"
+  },
+  "masters": {
+    "player_taoist": "characters/masters/taoist_idle_0.png",
+    "enemy_jiangshi": "characters/masters/jiangshi_idle_0.png",
+    "enemy_hopper": "characters/masters/hopper_idle_0.png",
+    "enemy_flying": "characters/masters/flying_idle_0.png",
+    "enemy_white": "characters/masters/white_bone_idle_0.png"
+  }
+}

@@ -6,8 +6,15 @@ import {
 } from '../game/save';
 import { Rng } from '../core/math';
 import { sfx } from '../render/sfx';
-
-const FONT = '"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif';
+import {
+  addBackButton,
+  addFramedPanel,
+  addSceneTitle,
+  addScreenBackdrop,
+  addSectionLabel,
+  addTextButton,
+  UI_FONT as FONT,
+} from '../render/ui-theme';
 
 /**
  * 地府银行 —— 冥币金融系统主界面。
@@ -27,19 +34,8 @@ export class BankScene extends Phaser.Scene {
   }
 
   create(): void {
-    const { width, height } = this.scale;
-    this.cameras.main.setBackgroundColor('#0e1016');
-
-    this.add
-      .text(width / 2, 34, '—— 天 地 银 行 ——', {
-        fontFamily: FONT, fontSize: '32px', color: '#a8c8e8', stroke: '#0a0c12', strokeThickness: 7,
-      })
-      .setOrigin(0.5);
-    this.add
-      .text(width / 2, 66, '冥不通商，唯通财。攒冥币、炒阴股、放贷款——总有一天换得动那杆弑神枪。', {
-        fontFamily: FONT, fontSize: '12px', color: '#6a7a96',
-      })
-      .setOrigin(0.5);
+    addScreenBackdrop(this, 'blue');
+    addSceneTitle(this, '天 地 银 行', '冥不通商，唯通财 · 阴股有风险，入市需谨慎', 'blue');
 
     // 账户栏
     const save = loadSave();
@@ -49,13 +45,7 @@ export class BankScene extends Phaser.Scene {
     }
     this.renderAccount();
 
-    // 返回
-    const back = this.add.text(72, height - 36, '← 回主菜单', {
-      fontFamily: FONT, fontSize: '18px', color: '#c8b8a0',
-    }).setInteractive({ useHandCursor: true });
-    back.on('pointerover', () => back.setColor('#ffe9b0'));
-    back.on('pointerout', () => back.setColor('#c8b8a0'));
-    back.on('pointerdown', () => {
+    addBackButton(this, () => {
       sfx.play('select');
       this.scene.start('Menu');
     });
@@ -65,43 +55,35 @@ export class BankScene extends Phaser.Scene {
 
   private renderOpenAccount(): void {
     const { width } = this.scale;
+    addFramedPanel(this, { x: width / 2 - 310, y: 148, width: 620, height: 390, tone: 'blue', alpha: 0.92, radius: 16 });
+    this.add.image(width / 2, 225, 'icon_gold').setScale(2.8);
     this.add
-      .text(width / 2, 220, '孟婆柜台：客官，开户吗？', {
-        fontFamily: FONT, fontSize: '26px', color: '#e8d8a0',
+      .text(width / 2, 292, '孟婆柜台 · 开一册阴司账簿', {
+        fontFamily: FONT, fontSize: '27px', color: '#e8d8a0', stroke: '#090b0f', strokeThickness: 5,
       })
       .setOrigin(0.5);
     this.add
-      .text(width / 2, 290, `开户即送 ${FX.signupBonus} 冥币开场。冥币虽买不了货，却能生钱。`, {
-        fontFamily: FONT, fontSize: '15px', color: '#8a9ab0',
+      .text(width / 2, 342, `开户即送 ${FX.signupBonus} 冥币。冥币虽买不了货，却能在阴司钱庄生钱。`, {
+        fontFamily: FONT, fontSize: '15px', color: '#a6b7ca',
       })
       .setOrigin(0.5);
 
-    const btn = this.add.container(width / 2, 380);
-    const bg = this.add.graphics();
-    bg.fillStyle(0x1a2430, 0.96).fillRoundedRect(-150, -30, 300, 60, 12);
-    bg.lineStyle(2, 0xa8c8e8, 0.9).strokeRoundedRect(-150, -30, 300, 60, 12);
-    const txt = this.add.text(0, 0, '开 户（送 100 冥币）', {
-      fontFamily: FONT, fontSize: '22px', color: '#f0e8d0',
-    }).setOrigin(0.5);
-    btn.add([bg, txt]);
-    // 容器必须先有尺寸才有碰撞区——漏了就是“点了没反应”
-    btn.setSize(300, 60);
-    btn.setInteractive({ useHandCursor: true });
-    btn.on('pointerover', () => btn.setScale(1.05));
-    btn.on('pointerout', () => btn.setScale(1));
-    btn.on('pointerdown', () => {
-      openAccount();
-      sfx.play('levelup');
-      this.scene.restart();
+    addTextButton(this, {
+      x: width / 2,
+      y: 416,
+      width: 330,
+      height: 60,
+      label: '开  户  ·  领 100 冥币',
+      tone: 'blue',
+      fontSize: 21,
+      onTap: () => {
+        openAccount();
+        sfx.play('levelup');
+        this.scene.restart();
+      },
     });
 
-    // 开户页也要能反悔离开，别把玩家困在柜台前
-    const back = this.add.text(width / 2, 480, '← 回主菜单', {
-      fontFamily: FONT, fontSize: '18px', color: '#c8b8a0',
-    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
-    back.on('pointerover', () => back.setColor('#ffe9b0'));
-    back.on('pointerout', () => back.setColor('#c8b8a0'));
-    back.on('pointerdown', () => {
+    addBackButton(this, () => {
       sfx.play('select');
       this.scene.start('Menu');
     });
@@ -112,113 +94,101 @@ export class BankScene extends Phaser.Scene {
   private renderAccount(): void {
     const { width } = this.scale;
 
-    this.goldText = this.add.text(width - 24, 34, '', {
+    addFramedPanel(this, { x: width - 370, y: 16, width: 338, height: 104, tone: 'blue', alpha: 0.92, radius: 10 });
+    this.goldText = this.add.text(width - 50, 34, '', {
       fontFamily: FONT, fontSize: '19px', color: '#ffd88a', stroke: '#0a0c12', strokeThickness: 4,
     }).setOrigin(1, 0.5);
-    this.mingbiText = this.add.text(width - 24, 62, '', {
-      fontFamily: FONT, fontSize: '19px', color: '#9fd8ff', stroke: '#0a0c12', strokeThickness: 4,
+    this.mingbiText = this.add.text(width - 50, 64, '', {
+      fontFamily: FONT, fontSize: '16px', color: '#9fd8ff', stroke: '#0a0c12', strokeThickness: 4,
     }).setOrigin(1, 0.5);
-    this.rateText = this.add.text(width - 24, 90, '', {
+    this.rateText = this.add.text(width - 50, 94, '', {
       fontFamily: FONT, fontSize: '14px', color: '#8a9ab0',
     }).setOrigin(1, 0.5);
 
-    // 兑换按钮
-    this.bankButton('换 500 文入冥', width / 2 - 260, 96, () => {
+    this.bankButton('500 文 → 冥币', 178, 112, () => {
       const got = exchangeToMingbi(500);
       if (got > 0) sfx.play('pickup');
       this.refreshAll();
     });
-    this.bankButton('冥币 50 换铜钱', width / 2 - 60, 96, () => {
+    this.bankButton('50 冥币 → 铜钱', 386, 112, () => {
       const got = exchangeToCopper(50);
       if (got > 0) sfx.play('pickup');
       this.refreshAll();
     });
-    this.bankButton('推进行情（模拟过一局）', width / 2 + 200, 96, () => {
+    this.bankButton('推进行情 · 模拟一局', 616, 112, () => {
       const report = financeTick(new Rng(Date.now() % 2147483647));
       if (report.length > 0) sfx.play('levelup');
       this.refreshAll();
     });
 
-    // A股行情表
-    this.add.text(72, 134, '【地府 A 股】（冥币计价，局间波动）', {
-      fontFamily: FONT, fontSize: '15px', color: '#a8c8e8',
-    });
-    STOCKS.forEach((s, i) => this.renderStockRow(s.id, s.name, 164 + i * 52));
+    addFramedPanel(this, { x: 48, y: 148, width: 720, height: 394, tone: 'blue', alpha: 0.86, radius: 12 });
+    addSectionLabel(this, 72, 168, '地府 A 股 · 冥币计价 / 局间波动', 'blue');
+    this.add.text(72, 202, '阴股', { fontFamily: FONT, fontSize: '12px', color: '#71859a' });
+    this.add.text(236, 202, '现价', { fontFamily: FONT, fontSize: '12px', color: '#71859a' });
+    this.add.text(326, 202, '涨跌', { fontFamily: FONT, fontSize: '12px', color: '#71859a' });
+    this.add.text(420, 202, '持仓', { fontFamily: FONT, fontSize: '12px', color: '#71859a' });
+    STOCKS.forEach((s, i) => this.renderStockRow(s.id, s.name, 234 + i * 68));
 
-    // 理财
-    this.add.text(72, 390, '【地府理财】（冥币存本，局期到期结算）', {
-      fontFamily: FONT, fontSize: '15px', color: '#c8e8b0',
-    });
-    WEALTH_PRODUCTS.forEach((p, i) => this.renderWealthRow(p.id, 420 + i * 48));
+    addFramedPanel(this, { x: 792, y: 148, width: 440, height: 394, tone: 'jade', alpha: 0.86, radius: 12 });
+    addSectionLabel(this, 816, 168, '地府理财 · 到期结算', 'jade');
+    WEALTH_PRODUCTS.forEach((p, i) => this.renderWealthRow(p.id, 216 + i * 76));
 
-    // 传说武器预告
-    this.add.text(72, 570, '【传说】', {
-      fontFamily: FONT, fontSize: '15px', color: '#ffd24a',
-    });
+    addSectionLabel(this, 816, 454, '传说目标', 'gold');
     const legendaryOwned = loadSave().legendary.includes('godslayer');
-    this.add.text(140, 570, legendaryOwned
+    this.add.image(838, 504, 'icon_godslayer').setScale(1.35);
+    this.add.text(870, 478, legendaryOwned
       ? '弑神枪已在你手——去鬼市装备它，荡涤满屏吧。'
-      : `弑神枪 · 荡涤满屏 —— 鬼市传说位标价 ${GODSLAYER_PRICE.toLocaleString()} 文。存钱吧，客官。`, {
-      fontFamily: FONT, fontSize: '15px', color: '#ffd88a',
-    });
+      : `弑神枪 · 荡涤满屏\n鬼市标价 ${GODSLAYER_PRICE.toLocaleString()} 文`, {
+      fontFamily: FONT, fontSize: '15px', color: '#ffd88a', lineSpacing: 7,
+    }).setOrigin(0, 0);
 
-    // 财经快报
-    this.reportText = this.add.text(72, 610, '', {
-      fontFamily: FONT, fontSize: '13px', color: '#8a9ab0', lineSpacing: 4,
+    addFramedPanel(this, { x: 48, y: 560, width: 1184, height: 72, tone: 'gold', alpha: 0.76, radius: 10 });
+    this.reportText = this.add.text(72, 582, '', {
+      fontFamily: FONT, fontSize: '13px', color: '#a5ad9e', lineSpacing: 4, wordWrap: { width: 1136 },
     });
 
     this.refreshAll();
   }
 
   private bankButton(label: string, x: number, y: number, onTap: () => void): void {
-    const c = this.add.container(x, y);
-    const bg = this.add.graphics();
-    bg.fillStyle(0x18202c, 0.96).fillRoundedRect(-95, -18, 190, 36, 8);
-    bg.lineStyle(1.5, 0xa8c8e8, 0.8).strokeRoundedRect(-95, -18, 190, 36, 8);
-    const txt = this.add.text(0, 0, label, { fontFamily: FONT, fontSize: '15px', color: '#e8f0f8' }).setOrigin(0.5);
-    c.add([bg, txt]);
-    c.setSize(190, 36);
-    c.setInteractive({ useHandCursor: true });
-    c.on('pointerover', () => c.setScale(1.05));
-    c.on('pointerout', () => c.setScale(1));
-    c.on('pointerdown', onTap);
+    addTextButton(this, { x, y, width: 190, height: 38, label, tone: 'blue', fontSize: 14, onTap });
   }
 
   private tradeButton(label: string, x: number, y: number, onTap: () => void): void {
-    const txt = this.add.text(x, y, label, {
-      fontFamily: FONT, fontSize: '14px', color: '#9fd8ff',
-    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
-    txt.on('pointerover', () => txt.setColor('#e8f7ff'));
-    txt.on('pointerout', () => txt.setColor('#9fd8ff'));
-    txt.on('pointerdown', () => {
-      onTap();
-      sfx.play('select');
+    addTextButton(this, {
+      x, y, width: 54, height: 30, label, tone: 'blue', fontSize: 12,
+      onTap: () => {
+        onTap();
+        sfx.play('select');
+      },
     });
   }
 
   private renderStockRow(id: string, name: string, y: number): void {
+    this.add.rectangle(406, y + 8, 684, 52, 0x0b1118, 0.48).setStrokeStyle(1, 0x365064, 0.42);
     this.add.text(72, y, name, { fontFamily: FONT, fontSize: '17px', color: '#f0e8d0' });
-    this.priceTexts[id] = this.add.text(230, y, '', { fontFamily: FONT, fontSize: '17px', color: '#e8f0f8' });
-    this.deltaTexts[id] = this.add.text(330, y, '', { fontFamily: FONT, fontSize: '15px' });
-    this.holdingTexts[id] = this.add.text(440, y, '', { fontFamily: FONT, fontSize: '14px', color: '#8a9ab0' });
+    this.priceTexts[id] = this.add.text(236, y, '', { fontFamily: FONT, fontSize: '17px', color: '#e8f0f8' });
+    this.deltaTexts[id] = this.add.text(326, y, '', { fontFamily: FONT, fontSize: '15px' });
+    this.holdingTexts[id] = this.add.text(420, y, '', { fontFamily: FONT, fontSize: '13px', color: '#8a9ab0' });
 
-    this.tradeButton('买10', 560, y, () => buyStock(id, 10));
-    this.tradeButton('买100', 625, y, () => buyStock(id, 100));
-    this.tradeButton('卖10', 695, y, () => sellStock(id, 10));
-    this.tradeButton('卖100', 765, y, () => sellStock(id, 100));
+    this.tradeButton('买10', 548, y + 8, () => buyStock(id, 10));
+    this.tradeButton('买百', 608, y + 8, () => buyStock(id, 100));
+    this.tradeButton('卖10', 668, y + 8, () => sellStock(id, 10));
+    this.tradeButton('卖百', 728, y + 8, () => sellStock(id, 100));
   }
 
   private renderWealthRow(pid: string, y: number): void {
     const p = WEALTH_PRODUCTS.find((w) => w.id === pid)!;
-    this.add.text(72, y, p.name, { fontFamily: FONT, fontSize: '16px', color: '#f0e8d0' });
-    this.add.text(210, y, `期限 ${p.runs} 局 · 收益 +${Math.round(p.rate * 100)}%${p.risk > 0 ? ` · 违约 ${Math.round(p.risk * 100)}%` : ' · 稳健'}`, {
-      fontFamily: FONT, fontSize: '13px', color: '#8a9ab0',
+    this.add.rectangle(1012, y + 14, 392, 62, 0x0d1612, 0.46).setStrokeStyle(1, 0x41604d, 0.4);
+    this.add.text(816, y, p.name, { fontFamily: FONT, fontSize: '16px', color: '#f0e8d0' });
+    this.add.text(816, y + 27, `期限 ${p.runs} 局 · 收益 +${Math.round(p.rate * 100)}%${p.risk > 0 ? ` · 违约 ${Math.round(p.risk * 100)}%` : ' · 稳健'}`, {
+      fontFamily: FONT, fontSize: '12px', color: '#8a9ab0',
     });
-    this.tradeButton('存 300', 620, y, () => {
+    this.tradeButton('存300', 1110, y + 12, () => {
       if (buyWealth(pid, 300)) sfx.play('levelup');
       this.refreshAll();
     });
-    this.tradeButton('存 1000', 700, y, () => {
+    this.tradeButton('存千', 1170, y + 12, () => {
       if (buyWealth(pid, 1000)) sfx.play('levelup');
       this.refreshAll();
     });
