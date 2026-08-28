@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { session } from '../game/session';
 import { describeOption } from '../data/options';
 import { sfx } from '../render/sfx';
+import { wrapChineseText } from '../render/ui-theme';
 import type { UpgradeOption } from '../game/types';
 
 const FONT = '"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif';
@@ -16,14 +17,17 @@ export class LevelUpScene extends Phaser.Scene {
 
   create(): void {
     const { width, height } = this.scale;
+    const endless = session.world.mode === 'endless';
     this.add.rectangle(width / 2, height / 2, width, height, 0x060a08, 0.78);
     this.add
-      .text(width / 2, 130, '—— 此 关 嘉 奖 ——', {
+      .text(width / 2, 130, endless ? '—— 道 行 精 进 ——' : '—— 此 关 嘉 奖 ——', {
         fontFamily: FONT, fontSize: '38px', color: '#e8d8a0', stroke: '#141a14', strokeThickness: 8,
       })
       .setOrigin(0.5);
     this.add
-      .text(width / 2, 172, `深入第 ${session.world.stage} 境，择一而修（点击卡片或按 1 / 2 / 3）`, {
+      .text(width / 2, 172, endless
+        ? '道行突破，择一而修（点击卡片或按 1 / 2 / 3）'
+        : `深入第 ${session.world.stage} 境，择一而修（点击卡片或按 1 / 2 / 3）`, {
         fontFamily: FONT, fontSize: '16px', color: '#8fa08a',
       })
       .setOrigin(0.5);
@@ -64,8 +68,9 @@ export class LevelUpScene extends Phaser.Scene {
         fontFamily: FONT, fontSize: '15px', color: `#${view.color.toString(16).padStart(6, '0')}`,
       }).setOrigin(0.5);
 
-      const title = this.add.text(0, -ch / 2 + 168, view.title, {
-        fontFamily: FONT, fontSize: '24px', color: '#f0e8d0', stroke: '#141a14', strokeThickness: 4,
+      const displayTitle = view.title.replace('骸骨 pack', '骸骨兽群');
+      const title = this.add.text(0, -ch / 2 + 168, displayTitle, {
+        fontFamily: FONT, fontSize: '22px', color: '#f0e8d0', stroke: '#141a14', strokeThickness: 4,
       }).setOrigin(0.5);
 
       const tag = view.tag
@@ -74,9 +79,9 @@ export class LevelUpScene extends Phaser.Scene {
           }).setOrigin(1, 0)
         : null;
 
-      const desc = this.add.text(0, 24, view.desc, {
-        fontFamily: FONT, fontSize: '15px', color: '#b8c0b0', align: 'center', wordWrap: { width: cw - 44 }, lineSpacing: 6,
-      }).setOrigin(0.5, 0);
+      const desc = this.add.text(0, 54, wrapChineseText(view.desc, 10), {
+        fontFamily: FONT, fontSize: '15px', color: '#b8c0b0', align: 'center', lineSpacing: 6,
+      }).setOrigin(0.5, 0).setMaxLines(3);
 
       const hotkey = this.add.text(0, ch / 2 - 20, String(i + 1), {
         fontFamily: FONT, fontSize: '14px', color: '#6a7a66',

@@ -43,6 +43,7 @@ export class GameScene extends Phaser.Scene {
   private pickupSprites: Img[] = [];
   private floaterTexts: Txt[] = [];
   private boltSprites: Img[] = [];
+  private totemSprites: Img[] = [];
   private orbitBlades: Img[] = [];
 
   private spritePool: Img[] = [];
@@ -329,15 +330,13 @@ export class GameScene extends Phaser.Scene {
     }
     for (let i = 0; i < allies.length; i++) {
       const a = allies[i];
+      const texture = a.kind === 'skelldog' ? 'pet_skelldog' : 'pet_hound';
       let img = this.allySprites[i];
       if (!img) {
-        // 骷髅犬用灵犬贴图冷色调占位（美术交接已列需求）
-        img = this.obtainSprite('pet_hound', 11);
-        if (a.kind === 'skelldog') img.setTint(0x9fb8d8);
+        img = this.obtainSprite(texture, 11);
         this.allySprites[i] = img;
       }
-      img.setTexture('pet_hound');
-      if (a.kind === 'skelldog') img.setTint(0x9fb8d8); else img.clearTint();
+      img.setTexture(texture).clearTint();
       img.setPosition(a.x, a.y - Math.abs(Math.sin(this.world.time * 10 + i)) * 2);
       img.setDepth(11);
       img.setFlipX(a.faceX < 0);
@@ -506,6 +505,7 @@ export class GameScene extends Phaser.Scene {
     const g = this.hazardGfx;
     g.clear();
     const strikes: Hazard[] = []; // 已落雷、需要画雷柱的
+    const totems: Hazard[] = [];
 
     for (const h of this.world.hazards) {
       const life = 1 - h.t / h.dur;
@@ -581,12 +581,10 @@ export class GameScene extends Phaser.Scene {
           break;
         }
         case 'totem': {
-          // 图腾立柱 + 脉动电雾 + 电击连线
+          // 正式图腾精灵承载主体，Graphics 只保留范围反馈与瞬时电击。
           const pulse = 0.6 + Math.sin(this.world.time * 8) * 0.3;
           g.fillStyle(h.color, 0.25 * pulse).fillCircle(h.x, h.y, h.r + 4);
-          g.fillStyle(0x2a3644, 0.95).fillRect(h.x - 7, h.y - 26, 14, 30);
-          g.lineStyle(2, 0x2a5c8a, 1).strokeRect(h.x - 7, h.y - 26, 14, 30);
-          g.fillStyle(h.color, pulse).fillRect(h.x - 5, h.y - 24, 10, 8);
+          totems.push(h);
           const pts = h.points;
           if (pts && pts.length >= 2) {
             g.lineStyle(2.5, 0x8fd3ff, 0.9).lineBetween(pts[0].x, pts[0].y, pts[1].x, pts[1].y);
@@ -611,8 +609,27 @@ export class GameScene extends Phaser.Scene {
       }
     }
 
+    this.syncTotems(totems);
     this.syncBolts(strikes);
     this.drawAura();
+  }
+
+  private syncTotems(totems: Hazard[]): void {
+    while (this.totemSprites.length > totems.length) {
+      const img = this.totemSprites.pop()!;
+      img.setVisible(false);
+      this.spritePool.push(img);
+    }
+    for (let i = 0; i < totems.length; i++) {
+      const h = totems[i];
+      let img = this.totemSprites[i];
+      if (!img) {
+        img = this.obtainSprite('summon_totem', 7);
+        this.totemSprites[i] = img;
+      }
+      const pulse = 1 + Math.sin(this.world.time * 8 + i) * 0.035;
+      img.setTexture('summon_totem').setPosition(h.x, h.y - 25).setScale(pulse).setAlpha(0.96);
+    }
   }
 
   private syncBolts(strikes: Hazard[]): void {

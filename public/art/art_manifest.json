@@ -6,7 +6,16 @@
     "enemy_jiangshi": "characters/enemy_jiangshi.png",
     "enemy_hopper": "characters/enemy_hopper.png",
     "enemy_flying": "characters/enemy_flying.png",
-    "enemy_white": "characters/enemy_white.png"
+    "enemy_white": "characters/enemy_white.png",
+    "icon_talisman": "icons/icon_talisman.png",
+    "icon_hammer": "icons/icon_hammer.png",
+    "icon_bow": "icons/icon_bow.png",
+    "icon_curse": "icons/icon_curse.png",
+    "icon_staff_mage": "icons/icon_staff_mage.png",
+    "icon_staff_summon": "icons/icon_staff_summon.png",
+    "pet_hound": "companions/pet_hound.png",
+    "pet_skelldog": "companions/pet_skelldog.png",
+    "summon_totem": "fx/summon_totem.png"
   },
   "masters": {
     "player_taoist": "characters/masters/taoist_idle_0.png",

@@ -49,6 +49,13 @@ export function toneColor(tone: UiTone): number {
   return TONE_COLOR[tone];
 }
 
+export function wrapChineseText(text: string, maxChars: number): string {
+  const chars = Array.from(text);
+  const lines: string[] = [];
+  for (let i = 0; i < chars.length; i += maxChars) lines.push(chars.slice(i, i + maxChars).join(''));
+  return lines.join('\n');
+}
+
 export function addScreenBackdrop(scene: Phaser.Scene, tone: UiTone): Phaser.GameObjects.Graphics {
   const { width, height } = scene.scale;
   const accent = toneColor(tone);

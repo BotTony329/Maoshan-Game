@@ -2,7 +2,7 @@
 
 > 更新：2026-08-28 · 对应代码 `src/render/textures.ts`
 > 🎨 **美术外包/交接请先读 [交接.md](交接.md)**（设计需求 + 风格圣经 + 生图 prompt + 交付规范），本文档是其技术附件。
-> 当前为**外部 PNG + 程序化 Canvas 回退**的混合模式。V2.6 已接入茅山道士与四类僵尸；其余仍为程序化占位。外部图统一在 `src/render/external-art.ts` 登记，`BootScene.preload()` 先加载，随后 `buildTextures()` 只补齐缺失键。
+> 当前为**外部 PNG + 程序化 Canvas 回退**的混合模式。外部图已接入茅山道士、四类僵尸、六主武器图标、两种犬类召唤物与雷纹图腾；其余继续使用程序化回退。外部图统一在 `src/render/external-art.ts` 登记，`BootScene.preload()` 先加载，随后 `buildTextures()` 只补齐缺失键。
 > 尺寸为当前逻辑尺寸（px）。美术可按 2x/3x 重绘，配合 `setScale` 缩放。
 
 ## 〇、主菜单整幅背景（用户提供，已接入）
@@ -13,24 +13,21 @@
 
 > 接入方式：MenuScene 以 cover 顶对齐铺满 1280×720；账本数据与按钮点击为代码层真实交互（替换背景图时保持按钮/账本的画中位置即可）。
 
-## 〇二、主武器图标（V3 新增需求，部分待外部美术）
+## 〇二、主武器与召唤物（V3 第二阶段已接入）
 
 | 键名 | 状态 | 内容 |
 |---|---|---|
-| `icon_talisman`（符文）/ `icon_bow`（猎弓）/ `icon_curse`（术士杖） | 已有程序化版本 | 主武器图标 |
-| `icon_hammer` / `icon_staff_mage` / `icon_staff_summon` | 已有程序化版本（雷纹锤/冰晶杖/骷髅杖） | 待外部美术精绘 |
-| 召唤物 `skelldog` 骷髅犬 | 临时用 `pet_hound` 冷色 tint 占位 | 需要独立形象 |
+| `icon_talisman` / `icon_hammer` / `icon_bow` | **32×32 外部 PNG** | 符文、萨满锤、猎弓主武器图标 |
+| `icon_curse` / `icon_staff_mage` / `icon_staff_summon` | **32×32 外部 PNG** | 术士杖、法师杖、召唤师杖图标 |
+| `pet_hound` | **52×38 外部 PNG** | 黑红地狱犬，火尾、铜铃、奔跑侧姿 |
+| `pet_skelldog` | **52×38 外部 PNG** | 骨骸犬，青绿鬼火眼、铜钱项圈；不再使用染色占位 |
+| `summon_totem` | **42×58 外部 PNG** | 雷纹石图腾；主体用图片，电击和范围仍由 Graphics 绘制 |
 
 ## 一、主角（道途皮肤已随职业系统移除）
 
 | 键名 | 尺寸 | 内容 | 用途 |
 |---|---|---|---|
-| `player_taoist` | **66×72 外部 PNG** | 青蓝描金道袍、八卦胸章、拂尘、桃木剑、葫芦与铜钱；母版 `public/art/characters/masters/taoist_idle_0.png` | 默认职业；**用户已实机确认** |
-| `player_shaman` | 38×48 | 萨满：蓝绿袍+发髻羽饰 | 萨满职业 |
-| `player_warrior` | 38×48 | 武士：红甲+额带飘带 | 武士职业 |
-| `player_hunter` | 38×48 | 猎人：橄榄袍+兜帽 | 猎人职业 |
-| `player_warlock` | 38×48 | 术士：黑紫袍+双角+灰肤 | 术士职业 |
-| `pet_hound` | 34×26 | 灵犬：棕毛猎犬，红眼铜铃项圈，奔跑姿 | 猎人宠物 |
+| `player_taoist` | **66×72 外部 PNG** | 青蓝描金道袍、八卦胸章、拂尘、桃木剑、葫芦与铜钱；母版 `public/art/characters/masters/taoist_idle_0.png` | 唯一玩家角色；**用户已实机确认** |
 
 ## 二、妖邪（敌人，正面 Q 版，` elite = 1.45x 缩放`）
 

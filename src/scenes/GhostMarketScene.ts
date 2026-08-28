@@ -11,12 +11,13 @@ import {
   addSceneTitle,
   addScreenBackdrop,
   UI_FONT as FONT,
+  wrapChineseText,
 } from '../render/ui-theme';
 
 /**
  * 鬼市 —— 分页商店：
  * 闯关页「鬼面具」：闯幽冥专属人物强化，买了常驻生效；
- * 无尽页「道途 + 宝珠」：原有正常商店。
+ * 无尽页「主武器 + 宝珠」：配置出战流派。
  * 切页整页重建（scene.restart），状态全在存档里，零泄漏。
  */
 export class GhostMarketScene extends Phaser.Scene {
@@ -42,7 +43,7 @@ export class GhostMarketScene extends Phaser.Scene {
     this.add.image(width - 52, 36, 'icon_gold').setScale(0.8).setOrigin(1, 0.5);
 
     this.makeTab('闯关 · 鬼面具', width / 2 - 130, 'stages');
-    this.makeTab('无尽 · 道途与宝珠', width / 2 + 130, 'endless');
+    this.makeTab('无尽 · 武器与宝珠', width / 2 + 130, 'endless');
 
     addBackButton(this, () => {
       sfx.play('select');
@@ -199,7 +200,7 @@ export class GhostMarketScene extends Phaser.Scene {
     const { width } = this.scale;
     console.log('[arsenal] count =', BASE_WEAPONS.length, 'save.weapons =', JSON.stringify(save.weapons));
     const cw = 182;
-    const ch = 168;
+    const ch = 176;
     const gap = 12;
     const n = BASE_WEAPONS.length;
     const startX = width / 2 - (cw * n + gap * (n - 1)) / 2;
@@ -215,13 +216,15 @@ export class GhostMarketScene extends Phaser.Scene {
       bg.lineStyle(active ? 3 : 2, active ? 0x9fd88f : def.color, active ? 1 : 0.9)
         .strokeRoundedRect(-cw / 2, -ch / 2, cw, ch, 12);
 
-      const icon = this.add.image(-cw / 2 + 34, -14, def.texture).setScale(1.3);
-      const name = this.add.text(-cw / 2 + 60, -ch / 2 + 18, def.name, {
-        fontFamily: FONT, fontSize: '18px', color: '#f0e8d0', stroke: '#141a14', strokeThickness: 4,
-      });
-      const desc = this.add.text(-cw / 2 + 14, 8, def.desc, {
-        fontFamily: FONT, fontSize: '12px', color: '#a89cb0', wordWrap: { width: cw - 28 }, lineSpacing: 3,
-      }).setOrigin(0, 0);
+      const iconBg = this.add.rectangle(0, -47, 48, 48, 0x101612, 0.9).setStrokeStyle(1.5, def.color, 0.55);
+      const icon = this.add.image(0, -47, def.texture).setScale(1.22);
+      const name = this.add.text(0, -12, def.name, {
+        fontFamily: FONT, fontSize: '17px', color: '#f0e8d0', stroke: '#141a14', strokeThickness: 4,
+      }).setOrigin(0.5);
+      const desc = this.add.text(0, 9, wrapChineseText(def.desc, 11), {
+        fontFamily: FONT, fontSize: '12px', color: '#a89cb0', align: 'center',
+        lineSpacing: 2,
+      }).setOrigin(0.5, 0).setMaxLines(2);
       const status = this.add.text(0, ch / 2 - 18, '', {
         fontFamily: FONT, fontSize: '15px', stroke: '#141a14', strokeThickness: 4,
       }).setOrigin(0.5);
@@ -234,7 +237,7 @@ export class GhostMarketScene extends Phaser.Scene {
         status.setText('点选装备').setColor('#8a9a86');
       }
 
-      card.add([bg, icon, name, desc, status]);
+      card.add([bg, iconBg, icon, name, desc, status]);
       card.setSize(cw, ch);
       card.setInteractive({ useHandCursor: true });
       card.on('pointerover', () => card.setScale(1.03));

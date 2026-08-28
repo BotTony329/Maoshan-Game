@@ -4,4 +4,13 @@ export const EXTERNAL_ART: ReadonlyArray<readonly [key: string, path: string]> =
   ['enemy_hopper', 'art/characters/enemy_hopper.png'],
   ['enemy_flying', 'art/characters/enemy_flying.png'],
   ['enemy_white', 'art/characters/enemy_white.png'],
+  ['icon_talisman', 'art/icons/icon_talisman.png'],
+  ['icon_hammer', 'art/icons/icon_hammer.png'],
+  ['icon_bow', 'art/icons/icon_bow.png'],
+  ['icon_curse', 'art/icons/icon_curse.png'],
+  ['icon_staff_mage', 'art/icons/icon_staff_mage.png'],
+  ['icon_staff_summon', 'art/icons/icon_staff_summon.png'],
+  ['pet_hound', 'art/companions/pet_hound.png'],
+  ['pet_skelldog', 'art/companions/pet_skelldog.png'],
+  ['summon_totem', 'art/fx/summon_totem.png'],
 ];
