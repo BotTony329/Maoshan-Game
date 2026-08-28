@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { computeWeaponStats } from '../src/game/weapons-runtime';
+import { computeWeaponStats } from '../src/game/weapons/shared';
 import { recalcStats } from '../src/game/stats';
-import { WEAPONS } from '../src/data/weapons';
+import { WEAPONS } from '../src/game/weapons/registry';
 import { BASE_STATS } from '../src/data/config';
 import { makeWorld } from './helpers';
 
@@ -77,7 +77,7 @@ describe('武器图鉴数据完整性', () => {
     const basePlayer = makeWorld().player;
     for (const def of Object.values(WEAPONS)) {
       for (let level = 1; level <= def.maxLevel; level++) {
-        const slot = { def, level, timer: 0, state: {}, instance: 1 };
+        const slot = { def, level, timer: 0, state: {}, instance: 1, specials: [] };
         const s = computeWeaponStats(slot, basePlayer);
         expect(s.damage, `${def.id} L${level}.damage`).toBeGreaterThan(0);
         expect(s.cooldown, `${def.id} L${level}.cooldown`).toBeGreaterThan(0);

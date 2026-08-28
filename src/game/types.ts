@@ -16,7 +16,7 @@ export type RunMode = 'stages' | 'endless';
  * PLAYING 战斗推进；DOORS 关卡结束亮门待选；REWARD 选关卡奖励；其余终态。
  * （V2 起升级不再打断战斗，三选一挪到关卡切换）
  */
-export type RunState = 'MENU' | 'PLAYING' | 'DOORS' | 'REWARD' | 'SHOP' | 'GAME_OVER';
+export type RunState = 'MENU' | 'PLAYING' | 'DOORS' | 'REWARD' | 'SHOP' | 'LEVEL_UP' | 'GAME_OVER';
 
 export type SfxName =
   | 'shoot' | 'hit' | 'kill' | 'hurt' | 'pickup' | 'levelup'
@@ -41,34 +41,31 @@ export interface WeaponLevelStats extends Partial<WeaponStats> {
   note?: string;
 }
 
-export type WeaponBehaviorId =
-  | 'talisman'  // 飞符：朝最近敌人放追踪直线弹
-  | 'orbit'     // 桃木剑：绕体旋转，持续判定
-  | 'aura'      // 糯米阵：跟随玩家的光环，持续伤害+减速
-  | 'coin'      // 铜钱剑：朝移动方向高速穿透重弹
-  | 'mirror'    // 八卦镜：朝敌群方向释放光束
-  | 'bell'      // 镇魂铃：以自身为中心扩张冲击环
-  | 'thunder'   // 天雷符：随机落雷（先警示后判定）
-  | 'ink'       // 墨斗线：螺旋扩散的墨刃
-  | 'bomb'      // 火符：抛射爆裂符，命中爆炸波及范围
-  | 'chain'     // 电符：闪电在敌群间跳跃连击
-  | 'sweep'     // 关刀：朝面朝方向横扫一大片
-  | 'wand'      // 西洋魔杖：自动拐弯的追踪星火
-  | 'curse'     // 蚀魂咒：邪术 DoT，咒死传染（术士专属）
-  | 'nuke';     // 弑神枪：传说神器，定期荡涤全屏
+     // 弑神枪：传说神器，定期荡涤全屏
+
+export interface ExclusiveUpgrade {
+  id: string;
+  name: string;
+  desc: string;
+}
 
 export interface WeaponDef {
   id: string;
   name: string;
   desc: string;
-  behavior: WeaponBehaviorId;
   maxLevel: number;
   /** index 0 = Lv1 基础值（全量），其后为每级覆盖 */
   levels: WeaponLevelStats[];
   color: number;   // 主题色（渲染层用）
   texture: string; // 图标贴图键
-  /** true = 仅鬼市出售获得，不进入局内升级池 */
+  /** true = 主武器（鬼市武器库购买装备，不入局内奖励池） */
+  base?: boolean;
+  /** 武器库售价（主武器用；0/缺省 = 免费默认） */
+  price?: number;
+  /** true = 仅特殊途径获得（传说武器等），不进入局内奖励池 */
   marketOnly?: boolean;
+  /** 武器专属升级：只有装备了该武器才会出现在奖励池 */
+  exclusives?: { id: string; name: string; desc: string }[];
 }
 
 // ---------------------------------------------------------------- 被动
@@ -155,8 +152,9 @@ export interface Enemy {
   lastHitSource: string;
 }
 
-/** 灵犬宠物（猎人道途）：无敌单位，扑咬最近之敌，无人可咬时跟随主人 */
-export interface Pet {
+/** 召唤物（无敌友军）：地狱犬/骷髅犬/未来召唤 */
+export interface Ally {
+  kind: string;
   x: number; y: number;
   vx: number; vy: number;
   faceX: number; faceY: number;
@@ -181,21 +179,7 @@ export interface StageTheme {
   tint: number;
 }
 
-// ---------------------------------------------------------------- 道途与宝珠（鬼市独家内容）
-
-/** 职业定义：改变起手武器、外观与一项天赋 */
-export interface ClassDef {
-  id: string;
-  name: string;
-  /** 一句话定位 */
-  title: string;
-  /** 天赋说明（卡片展示用） */
-  trait: string;
-  price: number; // 0 = 免费默认
-  color: number;
-  texture: string;   // 皮肤贴图键
-  startWeapon: string; // 起手武器 id（兜底飞符）
-}
+// ---------------------------------------------------------------- 宝珠（鬼市独家内容）
 
 /** 宝珠定义：鬼市独家机制道具，一局至多携带 ORB_CAP 颗 */
 export interface OrbDef {
@@ -231,7 +215,7 @@ export interface Projectile {
   homing: number;
 }
 
-export type HazardKind = 'aura' | 'ring' | 'beam' | 'strike' | 'spiral' | 'chain' | 'sweep';
+export type HazardKind = 'aura' | 'ring' | 'beam' | 'strike' | 'spiral' | 'chain' | 'sweep' | 'totem' | 'blizzard';
 
 /**
  * 区域效果统一抽象：光环、冲击环、光束、落雷、螺旋全部归一为
@@ -286,8 +270,9 @@ export interface WeaponSlot {
   level: number;
   timer: number;                  // 行为自主管理的冷却计时
   state: Record<string, number>;  // 行为私有状态（环绕角、螺旋角等）
-  /** 渲染层用于区分同武器多个实例的稳定序号 */
   instance: number;
+  /** 已获得的专属升级 id（萨满锤闪电箭/术士杖汲魂等） */
+  specials: string[];
 }
 
 export interface Player {
@@ -309,6 +294,7 @@ export interface Player {
 export type UpgradeOption =
   | { kind: 'weapon-new'; id: string }
   | { kind: 'weapon-upgrade'; id: string; fromLevel: number }
+  | { kind: 'special'; weapon: string; id: string }
   | { kind: 'passive-new'; id: string }
   | { kind: 'passive-upgrade'; id: string; fromLevel: number }
   | { kind: 'heal' }

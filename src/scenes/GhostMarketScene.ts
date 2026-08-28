@@ -1,9 +1,9 @@
 import Phaser from 'phaser';
-import { CLASS_LIST } from '../data/classes';
+import { BASE_WEAPONS } from '../game/weapons/registry';
 import { ORB_LIST, ORB_CAP } from '../data/orbs';
 import { MASKS, MASK_MAX_LEVEL, maskPrice } from '../data/masks';
 import { GODSLAYER_PRICE } from '../data/finance';
-import { buy, selectClass, toggleOrb, loadSave, buyLegendary, buyMask } from '../game/save';
+import { buy, equipWeapon, toggleOrb, loadSave, buyLegendary, buyMask } from '../game/save';
 import { sfx } from '../render/sfx';
 import {
   addBackButton,
@@ -29,6 +29,8 @@ export class GhostMarketScene extends Phaser.Scene {
 
   create(): void {
     const { width } = this.scale;
+    // 无头冒烟：?tab=endless 直接落在武器库页
+    if (new URLSearchParams(location.search).get('tab') === 'endless') this.tab = 'endless';
     addScreenBackdrop(this, 'purple');
     addSceneTitle(this, '鬼  市', '只卖修行路上得不着的东西', 'purple');
     addFramedPanel(this, { x: 48, y: 158, width: width - 96, height: 438, tone: 'purple', alpha: 0.72, radius: 14, depth: -1 });
@@ -146,21 +148,19 @@ export class GhostMarketScene extends Phaser.Scene {
         }
       });
 
-      card.setScale(0);
-      this.tweens.add({ targets: card, scale: 1, duration: 170, delay: i * 60, ease: 'Back.easeOut' });
     });
   }
 
-  // ------------------------------------------------ 无尽页：道途 + 宝珠 + 传说
+  // ------------------------------------------------ 无尽页：武器库 + 宝珠 + 传说
 
   private renderEndless(): void {
     const { width } = this.scale;
     this.renderLegendary(width);
 
-    this.add.text(72, 210, '【道途】择一入世', {
+    this.add.text(72, 210, '【武器库】装备主武器——决定你的流派与专属强化', {
       fontFamily: FONT, fontSize: '16px', color: '#d8c890',
     });
-    this.renderClasses();
+    this.renderArsenal();
     this.add.text(72, 412, `【宝珠】携带 ≤ ${ORB_CAP} 颗（点击勾选/取消）`, {
       fontFamily: FONT, fontSize: '16px', color: '#d8c890',
     });
@@ -194,72 +194,68 @@ export class GhostMarketScene extends Phaser.Scene {
     }
   }
 
-  private renderClasses(): void {
+  private renderArsenal(): void {
     const save = loadSave();
     const { width } = this.scale;
-    const cw = 218;
+    console.log('[arsenal] count =', BASE_WEAPONS.length, 'save.weapons =', JSON.stringify(save.weapons));
+    const cw = 182;
     const ch = 168;
-    const gap = 14;
-    const n = CLASS_LIST.length;
+    const gap = 12;
+    const n = BASE_WEAPONS.length;
     const startX = width / 2 - (cw * n + gap * (n - 1)) / 2;
 
-    CLASS_LIST.forEach((cls, i) => {
-      const owned = cls.price === 0 || save.classes.includes(cls.id);
-      const active = save.activeClass === cls.id;
+    BASE_WEAPONS.forEach((def, i) => {
+      const owned = def.price === 0 || save.weapons.includes(def.id);
+      const active = save.equippedWeapon === def.id;
       const cx = startX + cw / 2 + i * (cw + gap);
       const cy = 310;
       const card = this.add.container(cx, cy);
       const bg = this.add.graphics();
       bg.fillStyle(active ? 0x22301c : 0x1c1520, 0.97).fillRoundedRect(-cw / 2, -ch / 2, cw, ch, 12);
-      bg.lineStyle(active ? 3 : 2, active ? 0x9fd88f : cls.color, active ? 1 : 0.9)
+      bg.lineStyle(active ? 3 : 2, active ? 0x9fd88f : def.color, active ? 1 : 0.9)
         .strokeRoundedRect(-cw / 2, -ch / 2, cw, ch, 12);
 
-      const portrait = this.add.image(-cw / 2 + 40, -16, cls.texture).setScale(1.15);
-      const name = this.add.text(-cw / 2 + 74, -ch / 2 + 22, cls.name, {
-        fontFamily: FONT, fontSize: '20px', color: '#f0e8d0', stroke: '#141a14', strokeThickness: 4,
+      const icon = this.add.image(-cw / 2 + 34, -14, def.texture).setScale(1.3);
+      const name = this.add.text(-cw / 2 + 60, -ch / 2 + 18, def.name, {
+        fontFamily: FONT, fontSize: '18px', color: '#f0e8d0', stroke: '#141a14', strokeThickness: 4,
       });
-      const title = this.add.text(-cw / 2 + 74, -ch / 2 + 48, cls.title, {
-        fontFamily: FONT, fontSize: '12px', color: '#a89cb0', wordWrap: { width: cw - 90 },
-      });
-      const trait = this.add.text(-cw / 2 + 14, 16, cls.trait, {
-        fontFamily: FONT, fontSize: '13px', color: '#c8e8c0', wordWrap: { width: cw - 28 }, lineSpacing: 4,
-      });
+      const desc = this.add.text(-cw / 2 + 14, 8, def.desc, {
+        fontFamily: FONT, fontSize: '12px', color: '#a89cb0', wordWrap: { width: cw - 28 }, lineSpacing: 3,
+      }).setOrigin(0, 0);
       const status = this.add.text(0, ch / 2 - 18, '', {
-        fontFamily: FONT, fontSize: '16px', stroke: '#141a14', strokeThickness: 4,
+        fontFamily: FONT, fontSize: '15px', stroke: '#141a14', strokeThickness: 4,
       }).setOrigin(0.5);
 
       if (!owned) {
-        status.setText(`${cls.price} 文 购买`).setColor('#ffd88a');
+        status.setText(`${def.price} 文 购买`).setColor('#ffd88a');
       } else if (active) {
-        status.setText('✓ 此身入世').setColor('#9fd88f');
+        status.setText('✓ 已装备').setColor('#9fd88f');
       } else {
-        status.setText('点选启用').setColor('#8a9a86');
+        status.setText('点选装备').setColor('#8a9a86');
       }
 
-      card.add([bg, portrait, name, title, trait, status]);
+      card.add([bg, icon, name, desc, status]);
       card.setSize(cw, ch);
       card.setInteractive({ useHandCursor: true });
       card.on('pointerover', () => card.setScale(1.03));
       card.on('pointerout', () => card.setScale(1));
       card.on('pointerdown', () => {
         if (!owned) {
-          if (buy('class', cls.id, cls.price)) {
+          if (buy('weapon', def.id, def.price ?? 0)) {
             sfx.play('levelup');
-            selectClass(cls.id);
+            equipWeapon(def.id);
           } else {
             this.flashGold();
             return;
           }
         } else {
           sfx.play('select');
-          selectClass(cls.id);
+          equipWeapon(def.id);
         }
         this.refreshGold();
         this.scene.restart();
       });
 
-      card.setScale(0);
-      this.tweens.add({ targets: card, scale: 1, duration: 170, delay: i * 60, ease: 'Back.easeOut' });
     });
   }
 
@@ -321,8 +317,6 @@ export class GhostMarketScene extends Phaser.Scene {
         this.scene.restart();
       });
 
-      card.setScale(0);
-      this.tweens.add({ targets: card, scale: 1, duration: 170, delay: 200 + i * 60, ease: 'Back.easeOut' });
     });
 
     this.add.text(width - 72, 412, `已携带 ${save.equippedOrbs.length}/${ORB_CAP}`, {

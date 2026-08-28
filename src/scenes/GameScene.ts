@@ -1,8 +1,7 @@
 import Phaser from 'phaser';
 import { ARENA, stageTheme } from '../data/config';
-import { CLASSES, DEFAULT_CLASS } from '../data/classes';
 import { World } from '../game/world';
-import { computeWeaponStats, spiralBladePos } from '../game/weapons-runtime';
+import { computeWeaponStats, spiralBladePos } from '../game/weapons/shared';
 import { session } from '../game/session';
 import { loadSave } from '../game/save';
 import { sfx } from '../render/sfx';
@@ -24,7 +23,7 @@ export class GameScene extends Phaser.Scene {
   private world = session.world;
 
   private playerSprite!: Img;
-  private petSprite!: Img;
+  private allySprites: Img[] = [];
   private playerHpGfx!: Phaser.GameObjects.Graphics;
   private hazardGfx!: Phaser.GameObjects.Graphics;
   private stageTintRect!: Phaser.GameObjects.Rectangle;
@@ -77,16 +76,16 @@ export class GameScene extends Phaser.Scene {
       onGameOver: () => this.endRun(),
     });
     session.world = this.world;
-    // 鬼市配置：道途决定起手武器/皮肤/宠物，宝珠注入机制效果
-    // 无头冒烟可用 ?class=id&orbs=id1,id2 覆盖
+    // 鬼市配置：装备的主武器/宝珠/传说/面具
+    // 无头冒烟可用 ?weapon=id&orbs=id1,id2 覆盖
     const save = loadSave();
-    let loadout = { classId: save.activeClass, orbs: save.equippedOrbs, extraWeapons: save.legendary, masks: save.masks };
+    let loadout = { weaponId: save.equippedWeapon, orbs: save.equippedOrbs, extraWeapons: save.legendary, masks: save.masks };
     if (AUTOTEST) {
       const sp = new URLSearchParams(location.search);
       this.noAuto = sp.has('noauto');
       this.shopForce = sp.has('shopdoor');
       loadout = {
-        classId: sp.get('class') ?? save.activeClass,
+        weaponId: sp.get('weapon') ?? save.equippedWeapon,
         orbs: sp.has('orbs') ? sp.get('orbs')!.split(',') : save.equippedOrbs,
         extraWeapons: sp.has('godslayer') ? ['godslayer'] : save.legendary,
         masks: save.masks,
@@ -97,10 +96,7 @@ export class GameScene extends Phaser.Scene {
     this.buildArena();
     this.buildEmitters();
 
-    // 职业皮肤：道途决定外观
-    const classTex = (CLASSES[this.world.classId] ?? CLASSES[DEFAULT_CLASS]).texture;
-    this.playerSprite = this.add.image(this.world.player.x, this.world.player.y, classTex).setDepth(15);
-    this.petSprite = this.add.image(this.world.player.x, this.world.player.y, 'pet_hound').setDepth(11).setVisible(false);
+    this.playerSprite = this.add.image(this.world.player.x, this.world.player.y, 'player_taoist').setDepth(15);
     this.playerHpGfx = this.add.graphics().setDepth(30);
     this.hazardGfx = this.add.graphics().setDepth(6);
 
@@ -228,8 +224,8 @@ export class GameScene extends Phaser.Scene {
     this.burstEmitter.emitParticleAt(e.x, e.y, e.def.boss ? 26 : e.elite ? 12 : 6);
     this.smokeEmitter.emitParticleAt(e.x, e.y, e.def.boss ? 10 : 3);
 
-    // 术士汲魂：被咒死的敌人，魂焰从尸体被抽向施术者——“吸取感”的核心画面
-    if (this.world.classId === 'warlock' && e.curseUntil > 0) {
+    // 汲魂（术士杖专属）：被咒死的敌人，魂焰从尸体被抽向施术者——“吸取感”的核心画面
+    if (this.world.hasSpecial('warlock_staff', 'siphon') && e.curseUntil > 0) {
       const p = this.world.player;
       for (let i = 0; i < 3; i++) {
         const wisp = this.add
@@ -314,7 +310,7 @@ export class GameScene extends Phaser.Scene {
   private syncAll(): void {
     this.syncEnemies();
     this.syncPlayer();
-    this.syncPet();
+    this.syncAllies();
     this.syncProjectiles();
     this.syncPickups();
     this.syncFloaters();
@@ -322,19 +318,30 @@ export class GameScene extends Phaser.Scene {
     this.syncHazards();
   }
 
-  private syncPet(): void {
-    const pet = this.world.pet;
-    if (!pet) {
-      this.petSprite.setVisible(false);
-      return;
+  /** 召唤物同步：对齐 world.allies（多退少补，走精灵池） */
+  private syncAllies(): void {
+    const allies = this.world.allies;
+    while (this.allySprites.length > allies.length) {
+      const img = this.allySprites.pop()!;
+      img.setVisible(false);
+      this.spritePool.push(img);
     }
-    this.petSprite.setVisible(true);
-    this.petSprite.setPosition(pet.x, pet.y - Math.abs(Math.sin(this.world.time * 10)) * 2);
-    this.petSprite.setDepth(11);
-    // 朝向：左跑翻面
-    this.petSprite.setFlipX(pet.faceX < 0);
-    // 咬人时前倾
-    this.petSprite.setRotation(pet.faceY * 0.15);
+    for (let i = 0; i < allies.length; i++) {
+      const a = allies[i];
+      let img = this.allySprites[i];
+      if (!img) {
+        // 骷髅犬用灵犬贴图冷色调占位（美术交接已列需求）
+        img = this.obtainSprite('pet_hound', 11);
+        if (a.kind === 'skelldog') img.setTint(0x9fb8d8);
+        this.allySprites[i] = img;
+      }
+      img.setTexture('pet_hound');
+      if (a.kind === 'skelldog') img.setTint(0x9fb8d8); else img.clearTint();
+      img.setPosition(a.x, a.y - Math.abs(Math.sin(this.world.time * 10 + i)) * 2);
+      img.setDepth(11);
+      img.setFlipX(a.faceX < 0);
+      img.setRotation(a.faceY * 0.15);
+    }
   }
 
   private syncEnemies(): void {
@@ -467,7 +474,7 @@ export class GameScene extends Phaser.Scene {
 
     for (const slot of p.weapons) {
       const s = computeWeaponStats(slot, p);
-      if (slot.def.behavior === 'orbit') {
+      if (slot.def.id === 'peach_sword') {
         bladeSlots.push({ angle: slot.state.angle, radius: slot.state.radius, count: s.amount });
       }
     }
@@ -617,7 +624,7 @@ export class GameScene extends Phaser.Scene {
   private drawAura(): void {
     const p = this.world.player;
     for (const slot of p.weapons) {
-      if (slot.def.behavior !== 'aura') continue;
+      if (slot.def.id !== 'rice_ward') continue;
       const r = slot.state.radius;
       if (!r) continue;
       this.hazardGfx.fillStyle(0xe8e2c9, 0.06).fillCircle(p.x, p.y, r);

@@ -109,7 +109,8 @@ export class UIScene extends Phaser.Scene {
 
     const xpRatio = Phaser.Math.Clamp(p.xp / p.xpToNext, 0, 1);
     this.xpFill.width = (this.scale.width - 4) * xpRatio;
-    this.levelText.setText(`${CLASS_NAMES[this.world.classId] ?? '茅山道士'} · 道 ${p.level} 重`);
+    const weaponName = WEAPON_NAMES[p.weapons[0]?.def.id ?? 'rune'] ?? '符文';
+    this.levelText.setText(weaponName + (this.world.mode === 'endless' ? ` · 道 ${p.level} 重` : ''));
 
     if (this.world.mode === 'stages') {
       const theme = stageTheme(this.world.stage);
@@ -191,7 +192,7 @@ export class UIScene extends Phaser.Scene {
 
 const pad = (n: number): string => String(n).padStart(2, '0');
 
-import { CLASSES } from '../data/classes';
-const CLASS_NAMES: Record<string, string> = Object.fromEntries(
-  Object.values(CLASSES).map((c) => [c.id, c.name]),
+import { WEAPONS } from '../game/weapons/registry';
+const WEAPON_NAMES: Record<string, string> = Object.fromEntries(
+  Object.entries(WEAPONS).map(([id, d]) => [id, d.name]),
 );

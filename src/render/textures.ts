@@ -1504,6 +1504,74 @@ function buildIcons(scene: Phaser.Scene, add: Adder): void {
       },
     },
     {
+      key: 'icon_hammer', bg: '#1e3428',
+      draw: (c) => {
+        // 雷纹巨锤：斜柄 + 方锤头 + 雷纹
+        c.strokeStyle = '#6b4a2c';
+        c.lineWidth = 4;
+        c.beginPath();
+        c.moveTo(7, 28);
+        c.lineTo(18, 14);
+        c.stroke();
+        c.beginPath();
+        rr(c, 14, 2, 14, 14, 2);
+        fillStroke(c, '#8a9aa8', '#2a3644', 2);
+        c.strokeStyle = '#8fd3ff';
+        c.lineWidth = 1.6;
+        c.beginPath();
+        c.moveTo(18, 5);
+        c.lineTo(22, 9);
+        c.lineTo(18, 9);
+        c.lineTo(23, 13);
+        c.stroke();
+      },
+    },
+    {
+      key: 'icon_staff_mage', bg: '#14283c',
+      draw: (c) => {
+        // 法师杖：杖身 + 顶部冰晶
+        c.strokeStyle = '#5c4a2c';
+        c.lineWidth = 3.4;
+        c.beginPath();
+        c.moveTo(8, 29);
+        c.lineTo(20, 13);
+        c.stroke();
+        // 冰晶（六角雪花）
+        c.strokeStyle = '#bfe8ff';
+        c.lineWidth = 2;
+        for (let i = 0; i < 6; i++) {
+          const a = (i / 6) * Math.PI * 2;
+          c.beginPath();
+          c.moveTo(21, 9);
+          c.lineTo(21 + Math.cos(a) * 8, 9 + Math.sin(a) * 8);
+          c.stroke();
+        }
+        ell(c, 21, 9, 2.6, 2.6);
+        c.fillStyle = '#f0fbff';
+        c.fill();
+      },
+    },
+    {
+      key: 'icon_staff_summon', bg: '#22301c',
+      draw: (c) => {
+        // 召唤师杖：杖身 + 顶部小骷髅
+        c.strokeStyle = '#4a3e2c';
+        c.lineWidth = 3.4;
+        c.beginPath();
+        c.moveTo(9, 29);
+        c.lineTo(19, 12);
+        c.stroke();
+        ell(c, 18, 8, 6, 5.5);
+        fillStroke(c, '#d8d0c0', '#3a3226', 1.6);
+        c.fillStyle = '#3a3226';
+        ell(c, 15.8, 7, 1.6, 2);
+        c.fill();
+        ell(c, 20.2, 7, 1.6, 2);
+        c.fill();
+        c.fillRect(16.4, 11, 3.2, 2);
+      },
+    },
+    {
       key: 'icon_godslayer', bg: '#3a2c10',
       draw: (c) => {
         // 弑神枪：斜置金枪 + 缨穗

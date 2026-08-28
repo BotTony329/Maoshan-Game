@@ -132,15 +132,19 @@ describe('闯幽冥（关卡流）', () => {
 });
 
 describe('升级自动成长（仅无尽；闯幽冥无升级）', () => {
-  it('无尽：拾取魂魄升级，+1% 伤害/+3 上限，无选择弹窗', () => {
+  it('无尽：拾取魂魄升级 → 弹三选一 → 选完恢复并生效', () => {
     const w = makeWorld();
     w.start('endless');
     const dmg0 = w.player.stats.damage;
     const hp0 = w.player.stats.maxHp;
     w.dropPickup('xp', w.player.x, w.player.y, 50);
     w.update(1 / 60);
-    expect(w.state).toBe('PLAYING');
+    expect(w.state).toBe('LEVEL_UP');
     expect(w.player.level).toBeGreaterThan(1);
+    // 多级连升逐轮弹卡
+    let guard = 10;
+    while (w.state === 'LEVEL_UP' && guard-- > 0) w.applyUpgrade({ kind: 'heal' });
+    expect(w.state).toBe('PLAYING');
     expect(w.player.stats.damage).toBeGreaterThan(dmg0);
     expect(w.player.stats.maxHp).toBeGreaterThan(hp0);
   });
@@ -249,8 +253,8 @@ describe('地府金融', () => {
 
     // 每局自带（在道途起手武器之外追加）
     const w = makeWorld();
-    w.start('stages', { classId: 'taoist', extraWeapons: ['godslayer'] });
-    expect(w.player.weapons.map((x) => x.def.id)).toEqual(['talisman', 'godslayer']);
+    w.start('stages', { weaponId: 'rune', extraWeapons: ['godslayer'] });
+    expect(w.player.weapons.map((x) => x.def.id)).toEqual(['rune', 'godslayer']);
   });
 
   it('弑神枪真的一枪清屏', () => {

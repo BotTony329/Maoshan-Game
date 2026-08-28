@@ -2,8 +2,9 @@ import Phaser from 'phaser';
 import { sfx } from '../render/sfx';
 import { AUTOTEST } from '../render/autotest';
 import { loadSave, openAccount } from '../game/save';
+import { WEAPONS } from '../game/weapons/registry';
+
 import { session } from '../game/session';
-import { CLASSES } from '../data/classes';
 import { addFramedPanel, UI_FONT } from '../render/ui-theme';
 
 type Mode = 'stages' | 'endless';
@@ -122,11 +123,11 @@ export class MenuScene extends Phaser.Scene {
     };
     const rowY = [y1 + 18, y1 + 61, y1 + 104];
     row(rowY[0], 'icon_gold', `铜钱 ${save.gold}`, '#ffd88a');
-    row(rowY[1], 'icon_scripture', `闯关最佳 ${fmt(save.bestClassicTime)}`, '#d8d0b8');
+    row(rowY[1], 'icon_scripture', `闯关最佳 ${fmt(save.bestStageTime)}`, '#d8d0b8');
     row(rowY[2], 'icon_curse', `无尽最佳 ${fmt(save.bestEndlessTime)}`, '#d8d0b8');
 
     this.add
-      .text(x1 + 18, y1 + h - 19, `当前道途  ·  ${CLASSES[save.activeClass]?.name ?? '茅山道士'}`, {
+      .text(x1 + 18, y1 + h - 19, `当前武器  ·  ${WEAPONS[save.equippedWeapon]?.name ?? '符文'}`, {
         fontFamily: UI_FONT, fontSize: '12px', color: '#9fd88f', stroke: '#0a0806', strokeThickness: 3,
       });
   }

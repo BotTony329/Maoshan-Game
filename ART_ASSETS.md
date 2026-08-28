@@ -13,7 +13,15 @@
 
 > 接入方式：MenuScene 以 cover 顶对齐铺满 1280×720；账本数据与按钮点击为代码层真实交互（替换背景图时保持按钮/账本的画中位置即可）。
 
-## 一、主角与道途皮肤（8 向行走可后续拆帧）
+## 〇二、主武器图标（V3 新增需求，部分待外部美术）
+
+| 键名 | 状态 | 内容 |
+|---|---|---|
+| `icon_talisman`（符文）/ `icon_bow`（猎弓）/ `icon_curse`（术士杖） | 已有程序化版本 | 主武器图标 |
+| `icon_hammer` / `icon_staff_mage` / `icon_staff_summon` | 已有程序化版本（雷纹锤/冰晶杖/骷髅杖） | 待外部美术精绘 |
+| 召唤物 `skelldog` 骷髅犬 | 临时用 `pet_hound` 冷色 tint 占位 | 需要独立形象 |
+
+## 一、主角（道途皮肤已随职业系统移除）
 
 | 键名 | 尺寸 | 内容 | 用途 |
 |---|---|---|---|
@@ -86,7 +94,7 @@
 | `ground_s6` | 阎罗殿 | 鎏金菱形殿砖 |
 | `ground_tile` | （兼容别名） | = s1 |
 
-## 七、UI 图标（32×32，圆角深底框内符号）
+## 七、UI 图标（32×32，圆角深底框内符号；icon_hammer/icon_staff_mage/icon_staff_summon 为 V3 新增程序化版本）
 
 **武器图标**：`icon_talisman`（黄符）、`icon_sword`（桃木剑）、`icon_rice`（糯米堆）、`icon_coin`（铜钱）、`icon_mirror`（八卦镜）、`icon_bell`（镇魂铃）、`icon_thunder`（闪电）、`icon_ink`（墨旋）、`icon_fire`（火符）、`icon_wand`（魔杖）、`icon_bow`（猎弓）、`icon_curse`（骷髅咒符）、`icon_godslayer`（金枪红缨，传说）
 

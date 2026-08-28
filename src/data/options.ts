@@ -2,7 +2,7 @@
  * 升级选项的展示文案 —— 把 UpgradeOption 翻译成卡片所需的
  * 标题 / 描述 / 等级标识 / 主题色，供 UI 层直接消费。
  */
-import { WEAPONS } from './weapons';
+import { WEAPONS } from '../game/weapons/registry';
 import { PASSIVES } from './passives';
 import type { UpgradeOption } from '../game/types';
 
@@ -44,6 +44,14 @@ export function describeOption(option: UpgradeOption): OptionView {
       return {
         title: def.name, desc: def.desc, tag: `Lv${option.fromLevel + 1}`,
         kindLabel: '法宝精修', color: def.color, icon: def.texture,
+      };
+    }
+    case 'special': {
+      const wdef = WEAPONS[option.weapon];
+      const ex = wdef.exclusives?.find((e2) => e2.id === option.id);
+      return {
+        title: ex?.name ?? option.id, desc: ex?.desc ?? '', tag: wdef.name,
+        kindLabel: '专属强化', color: wdef.color, icon: wdef.texture,
       };
     }
     case 'heal':

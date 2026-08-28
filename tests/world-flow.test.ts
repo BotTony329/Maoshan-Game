@@ -2,12 +2,12 @@ import { describe, expect, it, vi } from 'vitest';
 import { makeWorld, fastForward } from './helpers';
 
 describe('World 基础流程', () => {
-  it('开局：战斗状态、飞符起手、时间归零', () => {
+  it('开局：战斗状态、符文起手、时间归零', () => {
     const w = makeWorld();
     expect(w.state).toBe('PLAYING');
     expect(w.time).toBe(0);
     expect(w.player.weapons).toHaveLength(1);
-    expect(w.player.weapons[0].def.id).toBe('talisman');
+    expect(w.player.weapons[0].def.id).toBe('rune');
   });
 
   it('飞符自动索敌并造成伤害（无尽模式掉魂魄）', () => {

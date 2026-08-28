@@ -1,39 +1,36 @@
 /**
- * 存档 v3 —— 家底 + 地府金融账户。
- * v2 结构（无金融）读取后自动补默认金融字段；铜钱/道途/宝珠保留。
+ * 存档 v4 —— 家底 + 武器库 + 地府金融账户。
+ * V3→V4：道途(职业)体系删除，改为"道士+主武器"体系（weapons/equippedWeapon）。
  */
 import { ORB_CAP } from '../data/orbs';
-import { DEFAULT_CLASS } from '../data/classes';
+import { DEFAULT_WEAPON, WEAPONS } from './weapons/registry';
 import { FX, STOCKS, WEALTH_PRODUCTS, initPrices, type StockPrices, type WealthHolding } from '../data/finance';
-import { MASK_MAX_LEVEL, maskPrice } from '../data/masks';
+import { MASK_MAX_LEVEL } from '../data/masks';
 
-const KEY = 'maoshan_save_v3';
+const KEY = 'maoshan_save_v4';
 
 export interface FinanceData {
   accountOpen: boolean;
-  /** 冥币活期余额 */
   mingbi: number;
-  /** 汇率：1 冥币 = rate 文铜钱（每局结算随机游走） */
   rate: number;
   prices: StockPrices;
   holdings: Record<string, number>;
   wealth: WealthHolding[];
-  /** 上次结算的财经快报（银行界面展示） */
   lastReport: string[];
 }
 
 export interface SaveData {
   gold: number;
-  classes: string[];
-  activeClass: string;
+  /** 已购主武器 id（符文默认免费） */
+  weapons: string[];
+  /** 当前装备的主武器 id */
+  equippedWeapon: string;
   orbs: string[];
   equippedOrbs: string[];
-  bestClassicTime: number;
+  bestStageTime: number;
   bestEndlessTime: number;
   runs: number;
-  /** 已解锁的传说武器（弑神枪）等 */
   legendary: string[];
-  /** 鬼面具等级（闯幽冥专属人物强化）：id -> 等级 */
   masks: Record<string, number>;
   finance: FinanceData;
 }
@@ -52,11 +49,11 @@ function defaultFinance(): FinanceData {
 
 const DEFAULT_SAVE: SaveData = {
   gold: 200,
-  classes: [],
-  activeClass: DEFAULT_CLASS,
+  weapons: [DEFAULT_WEAPON],
+  equippedWeapon: DEFAULT_WEAPON,
   orbs: [],
   equippedOrbs: [],
-  bestClassicTime: 0,
+  bestStageTime: 0,
   bestEndlessTime: 0,
   runs: 0,
   legendary: [],
@@ -79,7 +76,7 @@ export function loadSave(): SaveData {
   } catch {
     // 损坏档当新档处理
   }
-  cache = { ...DEFAULT_SAVE, classes: [], orbs: [], equippedOrbs: [], legendary: [], finance: defaultFinance() };
+  cache = { ...DEFAULT_SAVE, weapons: [DEFAULT_WEAPON], legendary: [], masks: {}, finance: defaultFinance() };
   return cache;
 }
 
@@ -94,23 +91,20 @@ export function persist(): void {
 
 function sanitize(s: SaveData): void {
   s.gold = Math.max(0, Math.floor(s.gold));
-  s.classes = [...new Set(s.classes)];
+  s.weapons = [...new Set(s.weapons)].filter((id) => WEAPONS[id] && WEAPONS[id].base);
+  if (!s.weapons.includes(DEFAULT_WEAPON)) s.weapons.unshift(DEFAULT_WEAPON);
+  if (!WEAPONS[s.equippedWeapon] || !s.weapons.includes(s.equippedWeapon)) {
+    s.equippedWeapon = DEFAULT_WEAPON;
+  }
   s.orbs = [...new Set(s.orbs)];
   s.equippedOrbs = s.equippedOrbs.filter((id) => s.orbs.includes(id)).slice(0, ORB_CAP);
-  if (s.activeClass !== DEFAULT_CLASS && !s.classes.includes(s.activeClass)) {
-    s.activeClass = DEFAULT_CLASS;
-  }
   s.masks = s.masks ?? {};
   for (const lv of Object.values(s.masks)) {
-    if (lv < 0 || lv > MASK_MAX_LEVEL) {
-      s.masks = {};
-      break;
-    }
+    if (lv < 0 || lv > MASK_MAX_LEVEL) { s.masks = {}; break; }
   }
   const f = s.finance;
   f.mingbi = Math.max(0, Math.floor(f.mingbi));
   f.rate = Math.min(FX.max, Math.max(FX.min, f.rate || FX.base));
-  // 股价表补齐缺上市的新票
   for (const st of STOCKS) {
     if (!f.prices[st.id] || !(f.prices[st.id].price > 0)) {
       f.prices[st.id] = { price: st.base, prev: st.base };
@@ -121,11 +115,10 @@ function sanitize(s: SaveData): void {
   f.lastReport = Array.isArray(f.lastReport) ? f.lastReport : [];
 }
 
-// ---------------------------------------------------------------- 基础操作（沿用）
-
-export function buy(kind: 'class' | 'orb', id: string, price: number): boolean {
+/** 购买：宝珠/主武器共用。钱不够或已拥有返回 false */
+export function buy(kind: 'orb' | 'weapon', id: string, price: number): boolean {
   const s = loadSave();
-  const list = kind === 'class' ? s.classes : s.orbs;
+  const list = kind === 'weapon' ? s.weapons : s.orbs;
   if (list.includes(id) || s.gold < price) return false;
   s.gold -= price;
   list.push(id);
@@ -133,10 +126,11 @@ export function buy(kind: 'class' | 'orb', id: string, price: number): boolean {
   return true;
 }
 
-export function selectClass(id: string): void {
+/** 装备主武器（须已拥有或为默认武器） */
+export function equipWeapon(id: string): void {
   const s = loadSave();
-  if (id !== DEFAULT_CLASS && !s.classes.includes(id)) return;
-  s.activeClass = id;
+  if (id !== DEFAULT_WEAPON && !s.weapons.includes(id)) return;
+  s.equippedWeapon = id;
   persist();
 }
 
@@ -149,7 +143,21 @@ export function toggleOrb(id: string): void {
   persist();
 }
 
-/** 冥币消费（局内冥品商店）。余额不足返回 false */
+/** 升级鬼面具（闯关页）。价格由存档层按等级权威计算。返回实际升到的等级（0 = 失败） */
+export function buyMask(id: string): number {
+  const s = loadSave();
+  const cur = s.masks[id] ?? 0;
+  if (cur >= MASK_MAX_LEVEL) return 0;
+  const price = maskPrice(cur + 1);
+  if (s.gold < price) return 0;
+  s.gold -= price;
+  s.masks[id] = cur + 1;
+  persist();
+  return cur + 1;
+}
+
+import { maskPrice } from '../data/masks';
+
 export function spendMingbi(amount: number): boolean {
   const s = loadSave();
   if (s.finance.mingbi < amount) return false;
@@ -167,14 +175,11 @@ export function addGold(amount: number): void {
 export function recordRun(mode: 'stages' | 'endless', timeSurvived: number): void {
   const s = loadSave();
   s.runs++;
-  if (mode === 'stages') s.bestClassicTime = Math.max(s.bestClassicTime, Math.floor(timeSurvived));
+  if (mode === 'stages') s.bestStageTime = Math.max(s.bestStageTime, Math.floor(timeSurvived));
   else s.bestEndlessTime = Math.max(s.bestEndlessTime, Math.floor(timeSurvived));
   persist();
 }
 
-// ---------------------------------------------------------------- 地府银行
-
-/** 开户：一次性，送开户礼 */
 export function openAccount(): void {
   const s = loadSave();
   if (s.finance.accountOpen) return;
@@ -183,7 +188,6 @@ export function openAccount(): void {
   persist();
 }
 
-/** 铜钱 → 冥币。返回换到的冥币数（钱不够换 1 单位时为 0） */
 export function exchangeToMingbi(copper: number): number {
   const s = loadSave();
   const usable = Math.min(s.gold, copper);
@@ -195,7 +199,6 @@ export function exchangeToMingbi(copper: number): number {
   return mingbi;
 }
 
-/** 冥币 → 铜钱。返回换到的铜钱数 */
 export function exchangeToCopper(mingbi: number): number {
   const s = loadSave();
   const usable = Math.min(s.finance.mingbi, mingbi);
@@ -207,7 +210,6 @@ export function exchangeToCopper(mingbi: number): number {
   return copper;
 }
 
-/** 买入股票（冥币计价）。返回实际成交股数 */
 export function buyStock(id: string, qty: number): number {
   const s = loadSave();
   const st = s.finance.prices[id];
@@ -221,7 +223,6 @@ export function buyStock(id: string, qty: number): number {
   return deal;
 }
 
-/** 卖出股票。返回到账冥币 */
 export function sellStock(id: string, qty: number): number {
   const s = loadSave();
   const st = s.finance.prices[id];
@@ -235,7 +236,6 @@ export function sellStock(id: string, qty: number): number {
   return gain;
 }
 
-/** 买理财产品（冥币计价） */
 export function buyWealth(pid: string, principal: number): boolean {
   const s = loadSave();
   if (principal <= 0 || s.finance.mingbi < principal) return false;
@@ -247,15 +247,10 @@ export function buyWealth(pid: string, principal: number): boolean {
   return true;
 }
 
-/**
- * 每局结算推进金融世界：理财到期、行情波动、汇率游走。
- * 返回快报文案（供银行/结算界面展示）。
- */
 export function financeTick(rng: { next(): number; range(min: number, max: number): number }): string[] {
   const s = loadSave();
   const report: string[] = [];
 
-  // 理财到期（可能违约）
   const matured: WealthHolding[] = [];
   s.finance.wealth = s.finance.wealth.filter((h) => {
     h.remaining -= 1;
@@ -275,14 +270,12 @@ export function financeTick(rng: { next(): number; range(min: number, max: numbe
     report.push(`${product?.name ?? '理财'}到期：${defaulted ? '烂尾违约！仅回收' : '连本带息回收'} ${payout} 冥币`);
   }
 
-  // 行情波动
   for (const st of STOCKS) {
     const p = s.finance.prices[st.id];
     p.prev = p.price;
     p.price = Math.round(Math.min(400, Math.max(2, p.price * rng.range(0.72, 1.35))));
   }
 
-  // 汇率游走
   const oldRate = s.finance.rate;
   s.finance.rate = Math.round(Math.min(FX.max, Math.max(FX.min, s.finance.rate * rng.range(1 - FX.swing, 1 + FX.swing))) * 10) / 10;
   report.push(`汇率：1 冥币 = ${oldRate} → ${s.finance.rate} 文`);
@@ -290,19 +283,6 @@ export function financeTick(rng: { next(): number; range(min: number, max: numbe
   s.finance.lastReport = report;
   persist();
   return report;
-}
-
-/** 升级鬼面具（闯关页）。价格由存档层按等级权威计算，UI 报价仅展示。返回实际升到的等级（0 = 失败） */
-export function buyMask(id: string): number {
-  const s = loadSave();
-  const cur = s.masks[id] ?? 0;
-  if (cur >= MASK_MAX_LEVEL) return 0;
-  const price = maskPrice(cur + 1);
-  if (s.gold < price) return 0;
-  s.gold -= price;
-  s.masks[id] = cur + 1;
-  persist();
-  return cur + 1;
 }
 
 /** 购买传说武器（铜钱计价，鬼市传说位） */

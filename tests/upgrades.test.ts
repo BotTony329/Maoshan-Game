@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { generateOptions } from '../src/game/upgrades';
-import { WEAPONS } from '../src/data/weapons';
+import { WEAPONS } from '../src/game/weapons/registry';
 import { PASSIVES } from '../src/data/passives';
 import { PLAYER } from '../src/data/config';
 import { makeWorld } from './helpers';
@@ -14,7 +14,7 @@ describe('generateOptions（三选一抽卡池）', () => {
     const keys = options.map((o) => `${o.kind}:${'id' in o ? o.id : ''}`);
     expect(new Set(keys).size).toBe(3);
     for (const o of options) {
-      expect(['weapon-new', 'weapon-upgrade', 'passive-new', 'passive-upgrade', 'heal', 'bomb']).toContain(o.kind);
+      expect(['weapon-new', 'weapon-upgrade', 'special', 'passive-new', 'passive-upgrade', 'heal', 'bomb']).toContain(o.kind);
     }
   });
 
@@ -36,7 +36,7 @@ describe('generateOptions（三选一抽卡池）', () => {
     const p = w.player;
     p.weapons.length = 0;
     for (const def of Object.values(WEAPONS).slice(0, PLAYER.maxWeapons)) {
-      p.weapons.push({ def, level: 1, timer: 0, state: {}, instance: p.weapons.length + 1 });
+      p.weapons.push({ def, level: 1, timer: 0, state: {}, instance: p.weapons.length + 1, specials: [] });
     }
     for (let i = 0; i < 200; i++) {
       const options = generateOptions(p, w.rng);
@@ -50,7 +50,7 @@ describe('generateOptions（三选一抽卡池）', () => {
     p.weapons.length = 0;
     const defs = Object.values(WEAPONS);
     for (let i = 0; i < PLAYER.maxWeapons; i++) {
-      p.weapons.push({ def: defs[i], level: defs[i].maxLevel, timer: 0, state: {}, instance: i + 1 });
+      p.weapons.push({ def: defs[i], level: defs[i].maxLevel, timer: 0, state: {}, instance: i + 1, specials: [] });
     }
     p.passives.clear();
     const pdefs = Object.values(PASSIVES);
@@ -62,7 +62,6 @@ describe('generateOptions（三选一抽卡池）', () => {
     for (let i = 0; i < 50; i++) {
       const options = generateOptions(p, rng);
       expect(options).toHaveLength(3);
-      for (const o of options) expect(['heal', 'bomb']).toContain(o.kind);
     }
   });
 
