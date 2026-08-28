@@ -16,7 +16,7 @@ export type RunMode = 'stages' | 'endless';
  * PLAYING 战斗推进；DOORS 关卡结束亮门待选；REWARD 选关卡奖励；其余终态。
  * （V2 起升级不再打断战斗，三选一挪到关卡切换）
  */
-export type RunState = 'MENU' | 'PLAYING' | 'DOORS' | 'REWARD' | 'SHOP' | 'LEVEL_UP' | 'GAME_OVER';
+export type RunState = 'MENU' | 'PLAYING' | 'DOORS' | 'REWARD' | 'SHOP' | 'LEVEL_UP' | 'GAME_OVER' | 'VICTORY';
 
 export type SfxName =
   | 'shoot' | 'hit' | 'kill' | 'hurt' | 'pickup' | 'levelup'
@@ -163,7 +163,7 @@ export interface Ally {
 // ---------------------------------------------------------------- 关卡与门
 
 /** 门种：关卡结束后亮出的抉择 */
-export type DoorId = 'next' | 'supply' | 'mob' | 'boss' | 'shop';
+export type DoorId = 'next' | 'supply' | 'mob' | 'boss' | 'shop' | 'extract';
 
 export interface DoorDef {
   id: DoorId;
@@ -253,7 +253,7 @@ export interface Floater {
   t: number;
 }
 
-export type PickupKind = 'xp' | 'heal' | 'bomb';
+export type PickupKind = 'xp' | 'heal' | 'bomb' | 'treasure';
 
 export interface Pickup {
   active: boolean;

@@ -23,6 +23,7 @@ export class UIScene extends Phaser.Scene {
   private bossName!: Txt;
   private banner!: Txt;
   private stageText!: Txt;
+  private lootText!: Txt;
   private vignette!: Phaser.GameObjects.Rectangle;
 
   private lastBuildKey = '';
@@ -118,7 +119,9 @@ export class UIScene extends Phaser.Scene {
       this.timeText.setText(`斩杀 ${goal}`);
       this.stageText.setText(`第${this.world.stage}境 · ${theme.name}`);
       this.killText.setText(`诛邪 ${this.world.kills}`);
+      this.lootText.setText(this.world.carryLoot > 0 ? `💰 携带 ${this.world.carryLoot} 文` : '');
     } else {
+      this.lootText.setText('');
       const total = Math.max(0, Math.floor(this.world.time));
       this.timeText.setText(`${pad(Math.floor(total / 60))}:${pad(total % 60)}`);
       this.stageText.setText('无尽尸潮');

@@ -1022,6 +1022,37 @@ function buildPickups(scene: Phaser.Scene, add: Adder): void {
     c.stroke();
   });
 
+  // 宝箱钱袋（搜打撤赃物）：钱袋口露出金光
+  add('pickup_treasure', 26, 26, (c) => {
+    // 袋身
+    c.beginPath();
+    c.moveTo(6, 24);
+    c.quadraticCurveTo(2, 10, 13, 9);
+    c.lineTo(13, 9);
+    c.quadraticCurveTo(24, 10, 20, 24);
+    c.closePath();
+    fillStroke(c, '#c8a04a', '#6c4c1c', 2);
+    // 袋口束绳
+    c.strokeStyle = '#6c4c1c';
+    c.lineWidth = 1.6;
+    c.beginPath();
+    c.moveTo(9, 9);
+    c.quadraticCurveTo(13, 13, 17, 9);
+    c.stroke();
+    // 露出的金光
+    c.fillStyle = '#ffd88a';
+    ell(c, 13, 7, 4.5, 2.6);
+    c.fill();
+    c.strokeStyle = '#8a6c1c';
+    c.lineWidth = 1;
+    c.stroke();
+    // 表面铜钱纹
+    ell(c, 13, 18, 3.2, 3.2);
+    fillStroke(c, '#e8c33c', '#7a5c14', 1.2);
+    c.fillStyle = '#6c4c1c';
+    c.fillRect(11.8, 16.8, 2.4, 2.4);
+  });
+
   // 爆竹（清屏）
   add('pickup_bomb', 20, 26, (c) => {
     c.fillStyle = '#c23b2a';
@@ -1843,6 +1874,44 @@ function buildDoors(scene: Phaser.Scene, add: Adder): void {
     c.restore();
     void frameColor;
   };
+
+  // 撤离门：翠绿传送门，绿光符文与出口雾气（搜打撤的“撤”）
+  add('door_extract', W, H, (c) => {
+    frame(c, '#143a2c', '#0a2018');
+    // 门体翠绿渐层
+    c.fillStyle = 'rgba(92,232,122,0.30)';
+    c.beginPath();
+    c.moveTo(14, H - 8);
+    c.lineTo(14, 46);
+    c.quadraticCurveTo(W / 2, 8, W - 14, 46);
+    c.lineTo(W - 14, H - 8);
+    c.closePath();
+    c.fill();
+    // 出口符文（三个绿符）
+    c.strokeStyle = '#5ce87a';
+    c.lineWidth = 2.4;
+    for (let i = 0; i < 3; i++) {
+      const x = W / 2 - 20 + i * 20;
+      c.beginPath();
+      c.moveTo(x, 78);
+      c.lineTo(x + 8, 92);
+      c.lineTo(x, 106);
+      c.lineTo(x - 8, 92);
+      c.closePath();
+      c.stroke();
+    }
+    // 门缝绿光
+    c.strokeStyle = 'rgba(92,232,122,0.95)';
+    c.lineWidth = 3;
+    c.beginPath();
+    c.moveTo(W / 2, 30);
+    c.lineTo(W / 2, H - 10);
+    c.stroke();
+    // 底部绿雾
+    c.fillStyle = 'rgba(92,232,122,0.35)';
+    ell(c, W / 2, H - 12, 42, 9);
+    c.fill();
+  });
 
   // 下行之路：灰绿石门，朴素无奇
   add('door_next', W, H, (c) => {

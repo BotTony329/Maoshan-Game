@@ -38,6 +38,12 @@ export const DOORS: Record<DoorId, DoorDef> = {
     desc: '地府银行分号：用冥币购特殊道具',
     color: 0x9fd8ff,
   },
+  extract: {
+    id: 'extract',
+    name: '撤离门',
+    desc: '活着出去：携带赃物与奖金全额入账',
+    color: 0x5ce87a,
+  },
 };
 
 /** 掷门：一关亮 1~3 扇；冥品商店门仅入地府后 10% 独立判定混入 */
@@ -54,10 +60,13 @@ export function rollDoors(stage: number, rng: Rng): DoorDef[] {
   const shopRoll = stage >= SHOP_DOOR.minStage && rng.next() < SHOP_DOOR.chance;
 
   const picked: DoorId[] = [];
-  if (count === 1 && !shopRoll) {
-    picked.push('next'); // 唯一门且无商店时保底是路
+  // 撤离门：第 5 境起 30% 独立判定（搜打撤的“撤”）
+  const extractRoll = stage >= 5 && rng.next() < 0.3;
+  if (count === 1 && !shopRoll && !extractRoll) {
+    picked.push('next'); // 唯一门且无商店/撤离时保底是路
   }
   if (shopRoll) picked.push('shop');
+  if (extractRoll) picked.push('extract');
   while (picked.length < count) {
     const avail = pool.filter((p) => !picked.includes(p.id));
     if (avail.length === 0) break;

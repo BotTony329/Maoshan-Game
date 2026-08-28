@@ -3,6 +3,7 @@
  * 规则：不掉魂魄、无升级（成长来自过门奖励与鬼面具）；Boss 房斩杀 Boss 过关。
  */
 import { stageKillTarget } from '../../data/config';
+import { rollTreasure } from '../../data/treasure';
 import { rollDoors } from '../../data/doors';
 import { generateOptions } from '../upgrades';
 import { spawnOnRing } from '../systems/spawner';
@@ -95,6 +96,10 @@ export function pickDoor(w: World, door: string): void {
       w.pendingBoss = true;
       w.bonusGold += 300;
       break;
+    case 'extract':
+      // 搜打撤·撤：活着出去，赃物与奖金全额入账（结算在 ResultScene）
+      w.extract();
+      return;
     case 'shop':
       w.state = 'SHOP';
       w.emitSfx('select');
@@ -130,6 +135,14 @@ export function enterStage(w: World): void {
   for (const h of w.hazards) h.active = false;
   for (const pk of w.pickups) pk.active = false;
   w.compactAll();
+
+  // 搜打撤·搜：本关随机位置刷新宝箱（价值随深度上浮，2% 出 5000 文大票）
+  const treasureValue = rollTreasure(w.stage, w.rng);
+  if (treasureValue > 0) {
+    const a = w.rng.range(0, Math.PI * 2);
+    const dist2p = w.rng.range(220, 460);
+    w.dropPickup('treasure', w.player.x + Math.cos(a) * dist2p, w.player.y + Math.sin(a) * dist2p, treasureValue);
+  }
 
   // Boss 房：开场即当前强度的 Boss（越深越硬）
   if (w.pendingBoss) {

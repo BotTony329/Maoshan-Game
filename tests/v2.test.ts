@@ -21,6 +21,7 @@ globalThis.localStorage = new MemStorage() as unknown as Storage;
 
 import { describe, expect, it } from 'vitest';
 import { stageTheme, goldForRun } from '../src/data/config';
+import { rollTreasure } from '../src/data/treasure';
 import { rollDoors } from '../src/data/doors';
 import { GODSLAYER_PRICE } from '../src/data/finance';
 import { Rng } from '../src/core/math';
@@ -237,12 +238,6 @@ describe('地府金融', () => {
     expect(s.finance.mingbi).toBe(500 + Math.round(500 * 1.12));
   });
 
-  it('金币结算公式（闯幽冥按层数、无尽按分钟）', () => {
-    expect(goldForRun({ kills: 0, level: 1, mode: 'stages', progress: 1, bonusGold: 0 })).toBe(6);
-    expect(goldForRun({ kills: 0, level: 1, mode: 'stages', progress: 5, bonusGold: 200 })).toBe(326);
-    expect(goldForRun({ kills: 0, level: 1, mode: 'endless', progress: 601, bonusGold: 0 })).toBe(156);
-  });
-
   it('弑神枪：999999 文，买不起就进不了手；买下后每局自带', () => {
     freshReset();
     freshSaveGold(500000);
@@ -334,6 +329,84 @@ describe('冥品商店（门后冥币消费）', () => {
     expect(slot.level).toBe(4);
   });
 });
+
+// ---------------------------------------------------------------- 搜打撤（宝箱/撤离）
+
+describe('搜打撤（宝箱与撤离门）', () => {
+  it('宝箱价值表：只出指定档位，90% 关有箱，5000 文约 2%', () => {
+    const rng = new Rng(99);
+    const counts: Record<number, number> = {};
+    let none = 0;
+    for (let i = 0; i < 1000; i++) {
+      const v = rollTreasure(1, rng);
+      if (v === 0) none++;
+      else {
+        counts[v] = (counts[v] ?? 0) + 1;
+        expect([10, 50, 150, 400, 1000, 5000]).toContain(v);
+      }
+    }
+    expect(none).toBeGreaterThan(50);   // ~10% 空关
+    expect(none).toBeLessThan(150);
+    expect(counts[5000] ?? 0).toBeGreaterThan(0);  // 2% 也会出
+    expect((counts[5000] ?? 0) + (counts[10] ?? 0)).toBeGreaterThan(150);
+  });
+
+  it('进关刷宝箱：走近拾取计入携带赃物', () => {
+    const w = makeWorld(42);
+    w.player.hp = 1e9;
+    w.player.stats.maxHp = 1e9;
+    runToDoors(w);
+    w.chooseDoor('next');
+    w.applyUpgrade({ kind: 'heal' });
+    // 手动放一个宝箱在脚下并拾取
+    w.dropPickup('treasure', w.player.x, w.player.y, 400);
+    const before = w.carryLoot;
+    w.update(1 / 60);
+    expect(w.carryLoot - before).toBe(400);
+  });
+
+  it('撤离门：第 5 境起 30% 出现，前 4 境绝不出现', () => {
+    let early = 0;
+    let late = 0;
+    for (let i = 0; i < 600; i++) {
+      if (rollDoors(4, new Rng(i + 1)).some((d) => d.id === 'extract')) early++;
+      if (rollDoors(6, new Rng(i + 401)).some((d) => d.id === 'extract')) late++;
+    }
+    expect(early).toBe(0);
+    expect(late).toBeGreaterThan(100);  // ~30%×600
+    expect(late).toBeLessThan(280);
+  });
+
+  it('撤离：活着出去以胜利结算；金币结算含赃物与奖金', () => {
+    const w = makeWorld(42);
+    w.player.hp = 1e9;
+    w.player.stats.maxHp = 1e9;
+    runToDoors(w);
+    w.carryLoot = 800;
+    w.bonusGold = 300;
+    w.chooseDoor('extract');
+    expect(w.state).toBe('VICTORY');
+    // 结算：基础(诛邪+道行) + 深度(第1境撤离为0) + 门奖金 + 赃物——按实际值断言
+    const expected = Math.round(w.kills * 0.5 + w.player.level * 6 + (w.stage - 1) * 30 + 300 + 800);
+    expect(goldForRun({
+      kills: w.kills, level: w.player.level, mode: 'stages',
+      progress: w.stage, bonusGold: w.bonusGold, carryLoot: w.carryLoot, extracted: true,
+    })).toBe(expected);
+  });
+
+  it('死亡：只有基础奖励，赃物与奖金尽失', () => {
+    expect(goldForRun({
+      kills: 100, level: 10, mode: 'stages',
+      progress: 6, bonusGold: 300, carryLoot: 2000, extracted: false,
+    })).toBeCloseTo(100 * 0.5 + 10 * 6, 5);
+  });
+});
+
+  it('金币结算公式（搜打撤规则）', () => {
+    expect(goldForRun({ kills: 0, level: 1, mode: 'stages', progress: 5, bonusGold: 200, carryLoot: 1000, extracted: false })).toBe(6);
+    expect(goldForRun({ kills: 0, level: 1, mode: 'stages', progress: 5, bonusGold: 200, carryLoot: 1000, extracted: true })).toBe(1326);
+    expect(goldForRun({ kills: 0, level: 1, mode: 'endless', progress: 601, bonusGold: 0, extracted: false })).toBe(156);
+  });
 
 // ---------------------------------------------------------------- 工具
 

@@ -50,6 +50,7 @@ export interface WorldEvents {
   onEnemyKilled?(e: Enemy): void;
   onBossSpawned?(e: Enemy): void;
   onGameOver?(): void;
+  onVictory?(): void;
   onSfx?(name: SfxName): void;
 }
 
@@ -118,6 +119,8 @@ export class World {
   stageTarget = 10;
   stageIsBoss = false;
   bonusGold = 0;
+  /** 搜打撤：携带中的赃物（未撤离不入账，死亡尽失） */
+  carryLoot = 0;
   spawnRateMult = 1;
   pendingSpawnRate = 1;
   pendingBoss = false;
@@ -309,6 +312,14 @@ export class World {
   /** 召唤一只召唤物（地狱犬/骷髅犬） */
   spawnAlly(kind: string, x: number, y: number, cap?: number): boolean {
     return spawnAlly(this, kind, x, y, cap);
+  }
+
+  /** 成功撤离：活着带着赃物出去，本局以胜利结算 */
+  extract(): void {
+    if (this.state !== 'DOORS') return;
+    this.state = 'VICTORY';
+    this.emitSfx('victory');
+    this.events.onVictory?.();
   }
 
   /** 玩家选完关卡/升级奖励后由 UI 调用 */

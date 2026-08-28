@@ -111,11 +111,18 @@ export function goldForRun(input: {
   /** stages：到达的关卡序号；endless：总存活秒数 */
   progress: number;
   bonusGold: number;
+  /** 搜打撤：携带中的赃物（未撤离不入账） */
+  carryLoot?: number;
+  /** 搜打撤：是否成功撤离（false/缺省 = 死亡，只有基础奖励） */
+  extracted?: boolean;
 }): number {
-  const base = input.kills * 0.5 + input.level * 6 + input.bonusGold;
   if (input.mode === 'stages') {
-    return Math.round(base + (input.progress - 1) * 30);
+    const base = input.kills * 0.5 + input.level * 6;
+    // 死亡：只有基础奖励——携带赃物与门奖金尽失（搜打撤核心风险）
+    if (!input.extracted) return Math.round(base);
+    return Math.round(base + (input.progress - 1) * 30 + input.bonusGold + (input.carryLoot ?? 0));
   }
+  const base = input.kills * 0.5 + input.level * 6 + input.bonusGold;
   return Math.round(base + Math.floor(input.progress / 60) * 15);
 }
 

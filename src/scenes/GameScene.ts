@@ -77,7 +77,8 @@ export class GameScene extends Phaser.Scene {
       onEnemyKilled: (e) => this.burst(e),
       onPlayerHit: () => this.cameras.main.shake(110, 0.006),
       onBossSpawned: () => this.cameras.main.shake(300, 0.004),
-      onGameOver: () => this.endRun(),
+      onGameOver: () => this.endRun(false),
+      onVictory: () => this.endRun(true),
     });
     session.world = this.world;
     // 鬼市配置：装备的主武器/宝珠/传说/面具
@@ -252,10 +253,10 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  private endRun(): void {
-    session.lastResult = { victory: false };
+  private endRun(victory: boolean): void {
+    session.lastResult = { victory };
     session.lastMode = this.world.mode;
-    this.time.delayedCall(800, () => {
+    this.time.delayedCall(victory ? 400 : 800, () => {
       if (!this.scene.isActive('Result')) this.scene.launch('Result');
     });
   }
@@ -438,10 +439,17 @@ export class GameScene extends Phaser.Scene {
         img = this.obtainSprite('pickup_xp', 7);
         this.pickupSprites[i] = img;
       }
-      img.setTexture(pk.kind === 'xp' ? 'pickup_xp' : pk.kind === 'heal' ? 'pickup_heal' : 'pickup_bomb');
-      img.setPosition(pk.x, pk.y + Math.sin(pk.t * 3 + i) * 2);
-      img.setDepth(7);
-      if (pk.kind === 'xp' && pk.value >= 10) img.setScale(1.45); // 精英大魂魄
+      if (pk.kind === 'treasure') {
+        img.setTexture('pickup_treasure');
+        img.setPosition(pk.x, pk.y + Math.sin(pk.t * 3 + i) * 2);
+        img.setDepth(7);
+        img.setScale(1.5);
+      } else {
+        img.setTexture(pk.kind === 'xp' ? 'pickup_xp' : pk.kind === 'heal' ? 'pickup_heal' : 'pickup_bomb');
+        img.setPosition(pk.x, pk.y + Math.sin(pk.t * 3 + i) * 2);
+        img.setDepth(7);
+        if (pk.kind === 'xp' && pk.value >= 10) img.setScale(1.45); // 精英大魂魄
+      }
     }
   }
 
@@ -643,6 +651,19 @@ export class GameScene extends Phaser.Scene {
     this.syncTotems(totems);
     this.syncBolts(strikes);
     this.drawAura();
+    this.drawTreasureBeacons();
+  }
+
+  /** 搜打撤：赃物光柱（clear 之后画，远处可见的“搜”目标） */
+  private drawTreasureBeacons(): void {
+    const g = this.hazardGfx;
+    for (const pk of this.world.pickups) {
+      if (pk.kind !== 'treasure') continue;
+      g.fillStyle(0xffd88a, 0.10).fillRect(pk.x - 12, pk.y - 220, 24, 220);
+      g.fillStyle(0xffd88a, 0.18).fillRect(pk.x - 6, pk.y - 220, 12, 220);
+      g.lineStyle(1.5, 0xffd88a, 0.5 + Math.sin(this.world.time * 5) * 0.2)
+        .strokeCircle(pk.x, pk.y, 16 + Math.sin(this.world.time * 5) * 3);
+    }
   }
 
   /** 正式法阵贴图叠在判定图形上；对象池避免高频技能反复分配精灵。 */
