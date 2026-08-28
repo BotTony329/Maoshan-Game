@@ -10,6 +10,7 @@ import { AUTOTEST } from '../render/autotest';
 import type { Enemy, Hazard } from '../game/types';
 type Img = Phaser.GameObjects.Image;
 type Txt = Phaser.GameObjects.Text;
+type RitualKind = 'ring' | 'beam' | 'sweep' | 'blizzard';
 
 const FONT = '"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif';
 /** 关刀扇面半角（与逻辑层 SWEEP_HALF_ANGLE 保持一致的画面表达） */
@@ -44,6 +45,7 @@ export class GameScene extends Phaser.Scene {
   private floaterTexts: Txt[] = [];
   private boltSprites: Img[] = [];
   private totemSprites: Img[] = [];
+  private ritualSprites: Record<RitualKind, Img[]> = { ring: [], beam: [], sweep: [], blizzard: [] };
   private orbitBlades: Img[] = [];
 
   private spritePool: Img[] = [];
@@ -305,7 +307,7 @@ export class GameScene extends Phaser.Scene {
 
   private obtainSprite(key: string, depth: number): Img {
     const img = this.spritePool.pop() ?? this.add.image(0, 0, key);
-    img.setTexture(key).setVisible(true).setDepth(depth).clearTint().setAlpha(1).setScale(1).setRotation(0);
+    img.setTexture(key).setVisible(true).setDepth(depth).clearTint().setAlpha(1).setScale(1).setRotation(0).setOrigin(0.5);
     return img;
   }
 
@@ -506,17 +508,23 @@ export class GameScene extends Phaser.Scene {
     g.clear();
     const strikes: Hazard[] = []; // 已落雷、需要画雷柱的
     const totems: Hazard[] = [];
+    const rings: Hazard[] = [];
+    const beams: Hazard[] = [];
+    const sweeps: Hazard[] = [];
+    const blizzards: Hazard[] = [];
 
     for (const h of this.world.hazards) {
       const life = 1 - h.t / h.dur;
       switch (h.kind) {
         case 'ring': {
+          rings.push(h);
           g.lineStyle(6, h.color, Math.max(life, 0.15)).strokeCircle(h.x, h.y, h.r);
           g.lineStyle(2, 0xffffff, Math.max(life * 0.5, 0.08)).strokeCircle(h.x, h.y, Math.max(h.r - 6, 1));
           g.fillStyle(h.color, Math.max(life * 0.08, 0.02)).fillCircle(h.x, h.y, h.r);
           break;
         }
         case 'beam': {
+          beams.push(h);
           g.save();
           g.translateCanvas(h.x, h.y);
           g.rotateCanvas(h.angle);
@@ -569,6 +577,7 @@ export class GameScene extends Phaser.Scene {
           break;
         }
         case 'sweep': {
+          sweeps.push(h);
           // 关刀横扫：扇形刀光，随生命期展开并消隐
           const life3 = Math.max(1 - h.t / h.dur, 0);
           const spread = SWEEP_ARC;
@@ -593,6 +602,7 @@ export class GameScene extends Phaser.Scene {
           break;
         }
         case 'blizzard': {
+          blizzards.push(h);
           // 暴风雪：冰蓝区域 + 环绕雪点
           g.fillStyle(0x9fd8ff, 0.14).fillCircle(h.x, h.y, h.r);
           g.lineStyle(2, 0xbfe8ff, 0.5).strokeCircle(h.x, h.y, h.r);
@@ -609,9 +619,54 @@ export class GameScene extends Phaser.Scene {
       }
     }
 
+    this.syncRitualArt('ring', rings, 'fx_soul_ring', (img, h, i) => {
+      const life = Math.max(1 - h.t / h.dur, 0.12);
+      img.setPosition(h.x, h.y).setDisplaySize(h.r * 2.08, h.r * 2.08)
+        .setRotation(this.world.time * 0.35 + i * 0.4).setAlpha(life * 0.24);
+    });
+    this.syncRitualArt('beam', beams, 'fx_bagua_seal', (img, h) => {
+      const life = Math.max(1 - h.t / h.dur, 0.18);
+      img.setPosition(h.x, h.y).setScale(0.72 + life * 0.16)
+        .setRotation(h.angle + this.world.time * 0.45).setAlpha(life * 0.8);
+    });
+    this.syncRitualArt('sweep', sweeps, 'fx_sweep_arc', (img, h) => {
+      const life = Math.max(1 - h.t / h.dur, 0);
+      img.setPosition(h.x, h.y).setDisplaySize(h.r * 2, h.r * 1.3)
+        .setRotation(h.angle - Math.PI / 2).setAlpha(life * 0.72);
+    });
+    this.syncRitualArt('blizzard', blizzards, 'fx_blizzard_flake', (img, h, i) => {
+      const life = Math.max(1 - h.t / h.dur, 0.2);
+      const size = Math.min(h.r * 0.62, 86);
+      img.setPosition(h.x, h.y).setDisplaySize(size, size)
+        .setRotation(this.world.time * 0.55 + i).setAlpha(life * 0.68);
+    });
     this.syncTotems(totems);
     this.syncBolts(strikes);
     this.drawAura();
+  }
+
+  /** 正式法阵贴图叠在判定图形上；对象池避免高频技能反复分配精灵。 */
+  private syncRitualArt(
+    kind: RitualKind,
+    hazards: Hazard[],
+    texture: string,
+    configure: (image: Img, hazard: Hazard, index: number) => void,
+  ): void {
+    const sprites = this.ritualSprites[kind];
+    while (sprites.length > hazards.length) {
+      const img = sprites.pop()!;
+      img.setVisible(false);
+      this.spritePool.push(img);
+    }
+    for (let i = 0; i < hazards.length; i++) {
+      let img = sprites[i];
+      if (!img) {
+        img = this.obtainSprite(texture, 7);
+        sprites[i] = img;
+      }
+      img.setTexture(texture).setDepth(7).clearTint();
+      configure(img, hazards[i], i);
+    }
   }
 
   private syncTotems(totems: Hazard[]): void {

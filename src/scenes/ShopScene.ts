@@ -5,6 +5,13 @@ import { loadSave } from '../game/save';
 import { sfx } from '../render/sfx';
 
 const FONT = '"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif';
+const SHOP_ART: Readonly<Record<string, string>> = {
+  rice_bag: 'shop_rice_bag',
+  cracker: 'shop_cracker',
+  fury_incense: 'shop_incense',
+  secret_scroll: 'shop_secret_scroll',
+  jade_pendant: 'shop_jade_pendant',
+};
 
 /** 冥品商店 —— 门后的局内商店，冥币结算；离店即进入下一关 */
 export class ShopScene extends Phaser.Scene {
@@ -47,7 +54,7 @@ export class ShopScene extends Phaser.Scene {
       bg.fillStyle(0x101a24, 0.97).fillRoundedRect(-cw / 2, -ch / 2, cw, ch, 14);
       bg.lineStyle(3, item.color, 0.9).strokeRoundedRect(-cw / 2, -ch / 2, cw, ch, 14);
 
-      const icon = this.add.image(0, -ch / 2 + 60, item.icon).setScale(2.2);
+      const icon = this.add.image(0, -ch / 2 + 60, SHOP_ART[item.id] ?? item.icon).setScale(2.2);
       const name = this.add.text(0, -ch / 2 + 118, item.name, {
         fontFamily: FONT, fontSize: '21px', color: '#f0e8d0', stroke: '#0a0c12', strokeThickness: 4,
       }).setOrigin(0.5);
