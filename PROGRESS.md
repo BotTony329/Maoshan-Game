@@ -11,6 +11,7 @@
   - 武器模块化：weapons/ 每武器一文件（def+tick+专属），registry 查表派发；删除职业系统（classes.ts/5 皮肤/特质），改道士+6 主武器（符文/萨满锤/猎弓地狱犬/术士杖/法师杖暴风雪/召唤师杖骷髅犬）
   - 武器专属升级：exclusives 进奖励池（装备才出现）；存档 v4（weapons/equippedWeapon 替代 classes/activeClass）
 - [x] 美术 AI 首批交付已落库（external-art.ts 机制 + ui-theme.ts 工厂，来自提交 d33fd14）
+- [x] V3.1 补漏：syncHazards 渲染 switch 补 totem（立柱+电弧）/blizzard（冰圈雪点）两 case（此前逻辑在、渲染缺失）；回归测试锁定非符文武器奖励池永不出现符文
 - [x] V2.4 主菜单按用户设计图重做：`public/menu_bg.png`（1536×1024 用户美术）cover 顶对齐铺满；左上账本用同风格框+实时存档数据覆盖画中占位；四按钮/右上四功能钮为真实点击区；gear=静音 book=操作提示 等 toast 反馈
 - [x] V2.3（用户实测反馈）：
   - 强度重校：闯幽冥虚拟分钟 +2→+1，另加每深一境全伤害 +4% 深度补偿；修 start() 顺序 bug（refreshStats 早于 stage 赋值导致全局 -4% 隐藏减伤）

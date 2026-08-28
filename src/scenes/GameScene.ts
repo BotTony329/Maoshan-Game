@@ -15,6 +15,7 @@ const FONT = '"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif';
 /** 关刀扇面半角（与逻辑层 SWEEP_HALF_ANGLE 保持一致的画面表达） */
 const SWEEP_ARC = Math.PI * 0.42;
 
+
 /**
  * 主战斗场景 —— 逻辑权威是 session.world（纯 TS），
  * 本场景只做三件事：喂输入、调 world.update(dt)、把实体数组同步成画面。
@@ -577,6 +578,32 @@ export class GameScene extends Phaser.Scene {
           g.lineStyle(3, 0xffffff, 0.6 * life3);
           g.slice(h.x, h.y, h.r * 0.92, h.angle - spread * life3, h.angle + spread * life3, false);
           g.strokePath();
+          break;
+        }
+        case 'totem': {
+          // 图腾立柱 + 脉动电雾 + 电击连线
+          const pulse = 0.6 + Math.sin(this.world.time * 8) * 0.3;
+          g.fillStyle(h.color, 0.25 * pulse).fillCircle(h.x, h.y, h.r + 4);
+          g.fillStyle(0x2a3644, 0.95).fillRect(h.x - 7, h.y - 26, 14, 30);
+          g.lineStyle(2, 0x2a5c8a, 1).strokeRect(h.x - 7, h.y - 26, 14, 30);
+          g.fillStyle(h.color, pulse).fillRect(h.x - 5, h.y - 24, 10, 8);
+          const pts = h.points;
+          if (pts && pts.length >= 2) {
+            g.lineStyle(2.5, 0x8fd3ff, 0.9).lineBetween(pts[0].x, pts[0].y, pts[1].x, pts[1].y);
+            g.lineStyle(1, 0xffffff, 0.7).lineBetween(pts[0].x, pts[0].y, pts[1].x, pts[1].y);
+          }
+          break;
+        }
+        case 'blizzard': {
+          // 暴风雪：冰蓝区域 + 环绕雪点
+          g.fillStyle(0x9fd8ff, 0.14).fillCircle(h.x, h.y, h.r);
+          g.lineStyle(2, 0xbfe8ff, 0.5).strokeCircle(h.x, h.y, h.r);
+          for (let i = 0; i < 8; i++) {
+            const a = this.world.time * 2.2 + (i * TAU) / 8;
+            const rr2 = h.r * (0.35 + 0.55 * ((i % 4) / 4));
+            g.fillStyle(0xe8f7ff, 0.75)
+              .fillCircle(h.x + Math.cos(a) * rr2, h.y + Math.sin(a * 1.3) * rr2 * 0.8, 2.2);
+          }
           break;
         }
         case 'aura':

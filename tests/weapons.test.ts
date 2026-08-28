@@ -134,6 +134,20 @@ describe('武器专属升级', () => {
     expect(computeWeaponStats(slot, w.player).pierce).toBe(before + 2);
   });
 
+  it('非符文武器的奖励池里绝不出现符文（回归：成长路径串味）', async () => {
+    const { generateOptions } = await import('../src/game/upgrades');
+    for (const wid of ['mage_staff', 'shaman_hammer', 'summoner_staff', 'hunting_bow', 'warlock_staff']) {
+      const w = makeWorld();
+      w.start('stages', { weaponId: wid });
+      for (let i = 0; i < 200; i++) {
+        for (const o of generateOptions(w.player, w.rng)) {
+          if (o.kind === 'weapon-new') expect(o.id, `${wid} 池出现符文`).not.toBe('rune');
+          if (o.kind === 'special') expect(o.weapon, `${wid} 池出现符文专属`).not.toBe('rune');
+        }
+      }
+    }
+  });
+
   it('专属升级只对装备者出现于奖励池', async () => {
     const { generateOptions } = await import('../src/game/upgrades');
     const w = makeWorld();
