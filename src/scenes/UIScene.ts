@@ -65,6 +65,13 @@ export class UIScene extends Phaser.Scene {
       })
       .setOrigin(1, 0);
 
+    // 搜打撤：携带赃物（闯关模式显示）
+    this.lootText = this.add
+      .text(width - 22, 60, '', {
+        fontFamily: UI_FONT, fontSize: '16px', color: '#ffd88a', stroke: '#141a14', strokeThickness: 4,
+      })
+      .setOrigin(1, 0);
+
     this.buildRows = this.add.container(0, 0);
 
     addFramedPanel(this, { x: width / 2 - 194, y: height - 60, width: 388, height: 48, tone: 'jade', alpha: 0.9, radius: 10, depth: -1 });
