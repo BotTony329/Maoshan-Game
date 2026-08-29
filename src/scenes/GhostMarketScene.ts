@@ -3,22 +3,23 @@ import { BASE_WEAPONS } from '../game/weapons/registry';
 import { EQUIPMENT, EQUIP_CAP } from '../data/equipment';
 import { MASKS, MASK_MAX_LEVEL, maskPrice } from '../data/masks';
 import { GODSLAYER_PRICE } from '../data/finance';
-import { buy, equipWeapon, toggleEquip, loadSave, buyLegendary, buyMask } from '../game/save';
+import { buy, equipWeapon, loadSave, buyLegendary, buyMask } from '../game/save';
 import { sfx } from '../render/sfx';
 import {
   addBackButton,
   addFramedPanel,
   addSceneTitle,
   addScreenBackdrop,
-  UI_FONT as FONT,
+  addSectionLabel,
   wrapChineseText,
+  UI_FONT as FONT,
 } from '../render/ui-theme';
 
 /**
- * 鬼市 —— 分页商店：
- * 闯关页「鬼面具」：闯幽冥专属人物强化，买了常驻生效；
- * 无尽页「主武器 + 宝珠」：配置出战流派。
- * 切页整页重建（scene.restart），状态全在存档里，零泄漏。
+ * 鬼市 —— 分页商店（框架式布局）：
+ * 闯关页「鬼面具」：闯幽冥专属人物强化；
+ * 无尽页「武器库 + 装备」：配出战流派与携带物。
+ * 每个分区 = 分区标题 + 描金子面板 + 卡片网格；切页整页重建。
  */
 export class GhostMarketScene extends Phaser.Scene {
   private tab: 'stages' | 'endless' = 'stages';
@@ -34,16 +35,16 @@ export class GhostMarketScene extends Phaser.Scene {
     if (new URLSearchParams(location.search).get('tab') === 'endless') this.tab = 'endless';
     addScreenBackdrop(this, 'purple');
     addSceneTitle(this, '鬼  市', '只卖修行路上得不着的东西', 'purple');
-    addFramedPanel(this, { x: 48, y: 158, width: width - 96, height: 438, tone: 'purple', alpha: 0.72, radius: 14, depth: -1 });
 
-    addFramedPanel(this, { x: width - 196, y: 18, width: 164, height: 46, tone: 'gold', alpha: 0.92, radius: 9 });
-    this.goldText = this.add.text(width - 62, 36, '', {
+    // 钱袋面板（右上）
+    addFramedPanel(this, { x: width - 196, y: 16, width: 164, height: 44, tone: 'gold', alpha: 0.92, radius: 9 });
+    this.goldText = this.add.text(width - 60, 38, '', {
       fontFamily: FONT, fontSize: '21px', color: '#ffd88a', stroke: '#141a14', strokeThickness: 5,
     }).setOrigin(1, 0.5);
-    this.add.image(width - 52, 36, 'icon_gold').setScale(0.8).setOrigin(1, 0.5);
+    this.add.image(width - 50, 38, 'icon_gold').setScale(0.8).setOrigin(1, 0.5);
 
     this.makeTab('闯关 · 鬼面具', width / 2 - 130, 'stages');
-    this.makeTab('无尽 · 武器与宝珠', width / 2 + 130, 'endless');
+    this.makeTab('无尽 · 武器与装备', width / 2 + 130, 'endless');
 
     addBackButton(this, () => {
       sfx.play('select');
@@ -51,6 +52,9 @@ export class GhostMarketScene extends Phaser.Scene {
     });
 
     this.refreshGold();
+    // 主内容框架（包住两个分区）
+    addFramedPanel(this, { x: 48, y: 152, width: width - 96, height: 486, tone: 'purple', alpha: 0.55, radius: 14, depth: -1 });
+
     if (this.tab === 'stages') this.renderMasks();
     else this.renderEndless();
   }
@@ -87,50 +91,53 @@ export class GhostMarketScene extends Phaser.Scene {
   // ------------------------------------------------ 闯关页：鬼面具
 
   private renderMasks(): void {
-    const { width } = this.scale;
     const save = loadSave();
-    this.add.text(72, 176, '【鬼面具】闯幽冥专属人物强化 —— 买下常驻生效，等级越高加成越猛', {
-      fontFamily: FONT, fontSize: '16px', color: '#d8c890',
-    });
+    addSectionLabel(this, 72, 172, '【鬼面具】闯幽冥专属人物强化 —— 常驻生效', 'purple');
+
+    // 子面板框架
+    const panel = this.add.graphics();
+    panel.fillStyle(0x1c1520, 0.6).fillRoundedRect(60, 186, 1160, 356, 12);
+    panel.lineStyle(1, 0x6a4a7a, 0.5).strokeRoundedRect(60, 186, 1160, 356, 12);
 
     const cw = 182;
-    const ch = 320;
+    const ch = 300;
     const gap = 12;
     const n = MASKS.length;
-    const startX = width / 2 - (cw * n + gap * (n - 1)) / 2;
+    const startX = 640 - (cw * n + gap * (n - 1)) / 2;
 
     MASKS.forEach((m, i) => {
       const lv = save.masks[m.id] ?? 0;
       const maxed = lv >= MASK_MAX_LEVEL;
       const cx = startX + cw / 2 + i * (cw + gap);
-      const cy = 360;
+      const cy = 364;
       const card = this.add.container(cx, cy);
       const bg = this.add.graphics();
       bg.fillStyle(0x1c1520, 0.97).fillRoundedRect(-cw / 2, -ch / 2, cw, ch, 12);
       bg.lineStyle(2.5, m.color, 0.9).strokeRoundedRect(-cw / 2, -ch / 2, cw, ch, 12);
 
-      const icon = this.add.image(0, -ch / 2 + 72, m.icon).setScale(2.65);
-      const name = this.add.text(0, -ch / 2 + 128, m.name, {
+      const icon = this.add.image(0, -ch / 2 + 62, m.icon).setScale(2.4);
+      const name = this.add.text(0, -ch / 2 + 118, m.name, {
         fontFamily: FONT, fontSize: '19px', color: '#f0e8d0', stroke: '#141a14', strokeThickness: 4,
       }).setOrigin(0.5);
-      const per = this.add.text(0, -ch / 2 + 152, m.perLevel, {
+      const per = this.add.text(0, -ch / 2 + 142, m.perLevel, {
         fontFamily: FONT, fontSize: '14px', color: '#c8e8c0',
       }).setOrigin(0.5);
-      const desc = this.add.text(0, 20, m.desc, {
-        fontFamily: FONT, fontSize: '13px', color: '#a99bb0', align: 'center',
-        wordWrap: { width: cw - 28 },
-      }).setOrigin(0.5, 0);
 
-      const pips = this.add.text(0, 92, '◆'.repeat(lv) + '◇'.repeat(MASK_MAX_LEVEL - lv), {
+      const pips = this.add.text(0, 24, '◆'.repeat(lv) + '◇'.repeat(MASK_MAX_LEVEL - lv), {
         fontFamily: FONT, fontSize: '13px', color: '#c8a0e8',
       }).setOrigin(0.5);
 
-      const status = this.add.text(0, ch / 2 - 26, maxed ? '已圆满' : `${maskPrice(lv + 1)} 文 · 升至 Lv${lv + 1}`, {
+      const desc = this.add.text(0, 44, m.desc, {
+        fontFamily: FONT, fontSize: '12px', color: '#a99bb0', align: 'center',
+        wordWrap: { width: cw - 28 },
+      }).setOrigin(0.5, 0);
+
+      const status = this.add.text(0, ch / 2 - 24, maxed ? '已圆满' : `${maskPrice(lv + 1)} 文 · 升至 Lv${lv + 1}`, {
         fontFamily: FONT, fontSize: maxed ? '16px' : '15px',
         color: maxed ? '#9fd88f' : '#ffd88a', stroke: '#141a14', strokeThickness: 3,
       }).setOrigin(0.5);
 
-      card.add([bg, icon, name, per, desc, pips, status]);
+      card.add([bg, icon, name, per, pips, desc, status]);
       card.setSize(cw, ch);
       card.setInteractive({ useHandCursor: true });
       card.on('pointerover', () => card.setScale(1.04));
@@ -148,34 +155,31 @@ export class GhostMarketScene extends Phaser.Scene {
           this.flashGold();
         }
       });
-
     });
   }
 
-  // ------------------------------------------------ 无尽页：武器库 + 宝珠 + 传说
+  // ------------------------------------------------ 无尽页：武器库 + 装备 + 传说
 
   private renderEndless(): void {
-    const { width } = this.scale;
-    this.renderLegendary(width);
+    this.renderLegendary();
 
-    this.add.text(72, 210, '【武器库】装备主武器——决定你的流派与专属强化', {
-      fontFamily: FONT, fontSize: '16px', color: '#d8c890',
-    });
+    addSectionLabel(this, 72, 192, '【武器库】主武器 —— 决定你的流派（装备在主界面·背包）', 'gold');
+    addFramedPanel(this, { x: 56, y: 204, width: 1168, height: 158, tone: 'gold', alpha: 0.5, radius: 12, depth: -1 });
     this.renderArsenal();
-    this.add.text(72, 412, '【装备】两模式通用（购买后回主界面·背包勾选携带）', {
-      fontFamily: FONT, fontSize: '16px', color: '#d8c890',
-    });
-    this.renderEquipment();
+
+    addSectionLabel(this, 72, 388, `【装备】两模式通用 —— 携带 ≤ ${EQUIP_CAP} 件（主界面·背包勾选）`, 'jade');
+    addFramedPanel(this, { x: 56, y: 400, width: 1168, height: 208, tone: 'jade', alpha: 0.5, radius: 12, depth: -1 });
+    this.renderEquipmentGrid();
   }
 
-  private renderLegendary(width: number): void {
+  private renderLegendary(): void {
     const save = loadSave();
     const owned = save.legendary.includes('godslayer');
-    const strip = this.add.container(width / 2, 176);
+    const strip = this.add.container(640, 158);
     const bg = this.add.graphics();
-    bg.fillStyle(0x2a2010, 0.95).fillRoundedRect(-560, -16, 1120, 32, 8);
-    bg.lineStyle(1.5, 0xffd24a, owned ? 0.9 : 0.55).strokeRoundedRect(-560, -16, 1120, 32, 8);
-    const icon = this.add.image(-540, 0, 'icon_godslayer').setScale(0.85);
+    bg.fillStyle(0x2a2010, 0.95).fillRoundedRect(-560, -15, 1120, 30, 8);
+    bg.lineStyle(1.5, 0xffd24a, owned ? 0.9 : 0.55).strokeRoundedRect(-560, -15, 1120, 30, 8);
+    const icon = this.add.image(-540, 0, 'icon_godslayer').setScale(0.8);
     const text = this.add.text(-516, 0, owned
       ? '传说 · 弑神枪已入手 —— 出场自带，荡涤满屏'
       : `传说 · 弑神枪「枪出荡涤满屏」—— 标价 ${GODSLAYER_PRICE.toLocaleString()} 文（冥币换不来，得靠钱生钱）`, {
@@ -183,7 +187,7 @@ export class GhostMarketScene extends Phaser.Scene {
     });
     strip.add([bg, icon, text]);
     if (!owned) {
-      strip.setInteractive({ useHandCursor: true, hitArea: new Phaser.Geom.Rectangle(-560, -16, 1120, 32), hitAreaCallback: Phaser.Geom.Rectangle.Contains });
+      strip.setInteractive({ useHandCursor: true, hitArea: new Phaser.Geom.Rectangle(-560, -15, 1120, 30), hitAreaCallback: Phaser.Geom.Rectangle.Contains });
       strip.on('pointerdown', () => {
         if (buyLegendary('godslayer', GODSLAYER_PRICE)) {
           sfx.play('victory');
@@ -197,36 +201,34 @@ export class GhostMarketScene extends Phaser.Scene {
 
   private renderArsenal(): void {
     const save = loadSave();
-    const { width } = this.scale;
-    console.log('[arsenal] count =', BASE_WEAPONS.length, 'save.weapons =', JSON.stringify(save.weapons));
     const cw = 182;
-    const ch = 176;
-    const gap = 12;
+    const ch = 136;
+    const gap = 16;
     const n = BASE_WEAPONS.length;
-    const startX = width / 2 - (cw * n + gap * (n - 1)) / 2;
+    const startX = 640 - (cw * n + gap * (n - 1)) / 2;
 
     BASE_WEAPONS.forEach((def, i) => {
       const owned = def.price === 0 || save.weapons.includes(def.id);
       const active = save.equippedWeapon === def.id;
       const cx = startX + cw / 2 + i * (cw + gap);
-      const cy = 310;
+      const cy = 283;
       const card = this.add.container(cx, cy);
       const bg = this.add.graphics();
       bg.fillStyle(active ? 0x22301c : 0x1c1520, 0.97).fillRoundedRect(-cw / 2, -ch / 2, cw, ch, 12);
       bg.lineStyle(active ? 3 : 2, active ? 0x9fd88f : def.color, active ? 1 : 0.9)
         .strokeRoundedRect(-cw / 2, -ch / 2, cw, ch, 12);
 
-      const iconBg = this.add.rectangle(0, -47, 48, 48, 0x101612, 0.9).setStrokeStyle(1.5, def.color, 0.55);
-      const icon = this.add.image(0, -47, def.texture).setScale(1.22);
-      const name = this.add.text(0, -12, def.name, {
-        fontFamily: FONT, fontSize: '17px', color: '#f0e8d0', stroke: '#141a14', strokeThickness: 4,
+      const iconBg = this.add.rectangle(0, -38, 46, 46, 0x101612, 0.9).setStrokeStyle(1.5, def.color, 0.55);
+      const icon = this.add.image(0, -38, def.texture).setScale(1.15);
+      const name = this.add.text(0, -4, def.name, {
+        fontFamily: FONT, fontSize: '16px', color: '#f0e8d0', stroke: '#141a14', strokeThickness: 4,
       }).setOrigin(0.5);
-      const desc = this.add.text(0, 9, wrapChineseText(def.desc, 11), {
-        fontFamily: FONT, fontSize: '12px', color: '#a89cb0', align: 'center',
+      const desc = this.add.text(0, 12, wrapChineseText(def.desc, 10), {
+        fontFamily: FONT, fontSize: '11px', color: '#a89cb0', align: 'center',
         lineSpacing: 2,
       }).setOrigin(0.5, 0).setMaxLines(2);
-      const status = this.add.text(0, ch / 2 - 18, '', {
-        fontFamily: FONT, fontSize: '15px', stroke: '#141a14', strokeThickness: 4,
+      const status = this.add.text(0, ch / 2 - 16, '', {
+        fontFamily: FONT, fontSize: '14px', stroke: '#141a14', strokeThickness: 4,
       }).setOrigin(0.5);
 
       if (!owned) {
@@ -240,7 +242,7 @@ export class GhostMarketScene extends Phaser.Scene {
       card.add([bg, iconBg, icon, name, desc, status]);
       card.setSize(cw, ch);
       card.setInteractive({ useHandCursor: true });
-      card.on('pointerover', () => card.setScale(1.03));
+      card.on('pointerover', () => card.setScale(1.04));
       card.on('pointerout', () => card.setScale(1));
       card.on('pointerdown', () => {
         if (owned) {
@@ -256,45 +258,48 @@ export class GhostMarketScene extends Phaser.Scene {
           this.flashGold();
         }
       });
-
     });
   }
 
-  private renderEquipment(): void {
+  private renderEquipmentGrid(): void {
     const save = loadSave();
-    const { width } = this.scale;
-    const cw = 194;
-    const ch = 128;
-    const gap = 12;
-    const n = EQUIPMENT.length;
-    const startX = width / 2 - (cw * n + gap * (n - 1)) / 2;
+    const cw = 222;
+    const ch = 88;
+    const gap = 10;
+    const cols = 5;
+    const startX = 640 - (cw * cols + gap * (cols - 1)) / 2;
 
-    EQUIPMENT.forEach((orb, i) => {
-      const owned = save.equipment.includes(orb.id);
-      const equipped = save.equipped.includes(orb.id);
-      const cx = startX + cw / 2 + i * (cw + gap);
-      const cy = 500;
+    EQUIPMENT.forEach((eq, i) => {
+      const owned = save.equipment.includes(eq.id);
+      const equipped = save.equipped.includes(eq.id);
+      const row = Math.floor(i / cols);
+      const col = i % cols;
+      const cx = startX + cw / 2 + col * (cw + gap);
+      const cy = 452 + row * (ch + 8);
       const card = this.add.container(cx, cy);
       const bg = this.add.graphics();
       bg.fillStyle(equipped ? 0x22301c : 0x1c1520, 0.97).fillRoundedRect(-cw / 2, -ch / 2, cw, ch, 12);
-      bg.lineStyle(equipped ? 3 : 2, equipped ? 0x9fd88f : orb.color, 1)
+      bg.lineStyle(equipped ? 3 : 2, equipped ? 0x9fd88f : eq.color, 1)
         .strokeRoundedRect(-cw / 2, -ch / 2, cw, ch, 12);
 
-      const icon = this.add.image(-cw / 2 + 32, 0, orb.icon).setScale(1.6);
-      const name = this.add.text(-cw / 2 + 58, -ch / 2 + 16, orb.name, {
-        fontFamily: FONT, fontSize: '18px', color: '#f0e8d0', stroke: '#141a14', strokeThickness: 4,
+      const icon = this.add.image(-cw / 2 + 30, 0, eq.icon).setScale(1.35);
+      const name = this.add.text(-cw / 2 + 52, -ch / 2 + 14, eq.name, {
+        fontFamily: FONT, fontSize: '16px', color: '#f0e8d0', stroke: '#141a14', strokeThickness: 3,
       });
-      const desc = this.add.text(-cw / 2 + 58, -ch / 2 + 42, orb.desc, {
-        fontFamily: FONT, fontSize: '12px', color: '#a89cb0', wordWrap: { width: cw - 74 }, lineSpacing: 3,
+      const desc = this.add.text(-cw / 2 + 52, -ch / 2 + 36, eq.desc, {
+        fontFamily: FONT, fontSize: '11px', color: '#a89cb0', wordWrap: { width: cw - 66 }, lineSpacing: 2,
       });
+      const status = this.add.text(cw / 2 - 12, ch / 2 - 14, '', {
+        fontFamily: FONT, fontSize: '13px',
+      }).setOrigin(1, 0.5);
 
-      const status = owned
-        ? this.add.text(0, ch / 2 - 16, equipped ? '✓ 携带中' : '点选携带', {
-            fontFamily: FONT, fontSize: '14px', color: equipped ? '#9fd88f' : '#8a9a86',
-          }).setOrigin(0.5)
-        : this.add.text(0, ch / 2 - 16, `${orb.price} 文 购买`, {
-            fontFamily: FONT, fontSize: '15px', color: '#ffd88a', stroke: '#141a14', strokeThickness: 4,
-          }).setOrigin(0.5);
+      if (!owned) {
+        status.setText(`${eq.price} 文`).setColor('#ffd88a');
+      } else if (equipped) {
+        status.setText('✓ 携带中').setColor('#9fd88f');
+      } else {
+        status.setText('已拥有').setColor('#8a9a86');
+      }
 
       card.add([bg, icon, name, desc, status]);
       card.setSize(cw, ch);
@@ -303,24 +308,22 @@ export class GhostMarketScene extends Phaser.Scene {
       card.on('pointerout', () => card.setScale(1));
       card.on('pointerdown', () => {
         if (!owned) {
-          if (buy('equip', orb.id, orb.price)) {
+          if (buy('equip', eq.id, eq.price)) {
             sfx.play('levelup');
-            toggleEquip(orb.id);
+            this.refreshGold();
+            this.scene.restart();
           } else {
             this.flashGold();
-            return;
           }
-        } else {
-          sfx.play('select');
-          toggleEquip(orb.id);
+          return;
         }
-        this.refreshGold();
-        this.scene.restart();
+        // 已拥有：去背包页勾选（避免本页内直接变更造成困惑）
+        sfx.play('select');
+        this.scene.start('Loadout');
       });
-
     });
 
-    this.add.text(width - 72, 412, `已携带 ${save.equipped.length}/${EQUIP_CAP}`, {
+    this.add.text(1216, 388, `已携带 ${save.equipped.length}/${EQUIP_CAP}`, {
       fontFamily: FONT, fontSize: '14px', color: '#9fd88f',
     }).setOrigin(1, 0);
   }
