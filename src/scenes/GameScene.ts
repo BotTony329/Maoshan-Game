@@ -13,8 +13,6 @@ type Txt = Phaser.GameObjects.Text;
 type RitualKind = 'ring' | 'beam' | 'sweep' | 'blizzard';
 
 const FONT = '"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif';
-/** 关刀扇面半角（与逻辑层 SWEEP_HALF_ANGLE 保持一致的画面表达） */
-const SWEEP_ARC = Math.PI * 0.42;
 
 
 /**
@@ -586,15 +584,19 @@ export class GameScene extends Phaser.Scene {
         }
         case 'sweep': {
           sweeps.push(h);
-          // 关刀横扫：扇形刀光，随生命期展开并消隐
+          // 震地波：全周扩张环 + 放射裂纹（360° 震击）
           const life3 = Math.max(1 - h.t / h.dur, 0);
-          const spread = SWEEP_ARC;
-          g.fillStyle(h.color, 0.3 * life3);
-          g.slice(h.x, h.y, h.r, h.angle - spread, h.angle + spread, false);
-          g.fillPath();
-          g.lineStyle(3, 0xffffff, 0.6 * life3);
-          g.slice(h.x, h.y, h.r * 0.92, h.angle - spread * life3, h.angle + spread * life3, false);
-          g.strokePath();
+          const rr3 = h.r * (0.35 + 0.65 * (1 - life3));
+          g.fillStyle(h.color, 0.22 * life3).fillCircle(h.x, h.y, rr3);
+          g.lineStyle(3.5, h.color, 0.85 * life3).strokeCircle(h.x, h.y, rr3);
+          g.lineStyle(1.5, 0xffffff, 0.55 * life3).strokeCircle(h.x, h.y, rr3 * 0.82);
+          for (let i = 0; i < 10; i++) {
+            const a = (i / 10) * TAU + 0.3;
+            const r1 = rr3 * 0.4;
+            const r2 = rr3 * 0.92;
+            g.lineStyle(2, h.color, 0.5 * life3);
+            g.lineBetween(h.x + Math.cos(a) * r1, h.y + Math.sin(a) * r1, h.x + Math.cos(a) * r2, h.y + Math.sin(a) * r2);
+          }
           break;
         }
         case 'totem': {
@@ -636,11 +638,6 @@ export class GameScene extends Phaser.Scene {
       const life = Math.max(1 - h.t / h.dur, 0.18);
       img.setPosition(h.x, h.y).setScale(0.72 + life * 0.16)
         .setRotation(h.angle + this.world.time * 0.45).setAlpha(life * 0.8);
-    });
-    this.syncRitualArt('sweep', sweeps, 'fx_sweep_arc', (img, h) => {
-      const life = Math.max(1 - h.t / h.dur, 0);
-      img.setPosition(h.x, h.y).setDisplaySize(h.r * 2, h.r * 1.3)
-        .setRotation(h.angle - Math.PI / 2).setAlpha(life * 0.72);
     });
     this.syncRitualArt('blizzard', blizzards, 'fx_blizzard_flake', (img, h, i) => {
       const life = Math.max(1 - h.t / h.dur, 0.2);

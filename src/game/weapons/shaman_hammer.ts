@@ -5,30 +5,27 @@
 import { TAU } from '../../core/math';
 import { chainFrom } from './shared';
 import { tickTimer } from './shared';
-import { spawnAlly } from '../systems/allies';
-import type { WeaponModule } from './types';
-
-const SWEEP_HALF_ANGLE = Math.PI * 0.42;
+import type { Enemy, WeaponModule } from './types';
 
 export const shamanHammer: WeaponModule = {
   def: {
     id: 'shaman_hammer',
     name: '萨满锤',
-    desc: '雷纹巨锤横扫一片，怪越密越是趁手',
+    desc: '雷纹巨锤震击周身，360°荡开妖邪',
     maxLevel: 8,
     color: 0x7ec8a0,
     texture: 'icon_hammer',
     base: true,
     price: 450,
     levels: [
-      { damage: 38, cooldown: 1.5, amount: 1, area: 120, speed: 1, duration: 0.22, pierce: 0, knockback: 300, note: '横扫面朝一片' },
+      { damage: 38, cooldown: 1.5, amount: 1, area: 120, speed: 1, duration: 0.22, pierce: 0, knockback: 300, note: '震击周身一圈' },
       { damage: 50, note: '锤锋更沉' },
-      { area: 140, knockback: 340, note: '扫得更远' },
-      { amount: 2, cooldown: 1.35, note: '前后两向连扫' },
+      { area: 140, knockback: 340, note: '震得更远' },
+      { amount: 2, cooldown: 1.35, note: '连震两波' },
       { damage: 66, area: 155, note: '锤锋更沉' },
       { cooldown: 1.2, knockback: 380, note: '抡锤更快' },
       { damage: 88, area: 170, note: '锤罡纵横' },
-      { amount: 3, damage: 112, area: 185, duration: 0.18, note: '雷锤临凡，横扫八荒' },
+      { amount: 3, damage: 112, area: 185, duration: 0.18, note: '雷锤震八荒，周身无活口' },
     ],
     exclusives: [
       { id: 'chainstrike', name: '闪电箭', desc: '锤击命中时向最多 2 名敌人放出跳跃雷光' },
@@ -59,30 +56,22 @@ export const shamanHammer: WeaponModule = {
     if (!tickTimer(slot, dt)) return;
     slot.timer = s.cooldown;
 
-    const reach = s.area;
+    // 360° 震击：周身一圈全部命中，amount = 连震波数
     for (let i = 0; i < s.amount; i++) {
-      const base = Math.atan2(w.player.faceY, w.player.faceX);
-      const angle = base + (i * TAU) / s.amount;
-      const cos = Math.cos(angle);
-      const sin = Math.sin(angle);
-
-      const hits = w.queryEnemies(w.player.x, w.player.y, reach + 46);
-      let sweepHits = 0;
-      const struck = new Set<import('../types').Enemy>();
+      const hits = w.queryEnemies(w.player.x, w.player.y, s.area + 46);
+      const struck = new Set<Enemy>();
       for (const e of hits) {
         if (!e.active || e.hp <= 0) continue;
         const dx = e.x - w.player.x;
         const dy = e.y - w.player.y;
-        const d = Math.hypot(dx, dy);
-        if (d > reach + e.radius) continue;
-        if ((dx / Math.max(d, 1)) * cos + (dy / Math.max(d, 1)) * sin < Math.cos(SWEEP_HALF_ANGLE)) continue;
-        w.dealDamage(e, s.damage, (dx / Math.max(d, 1)) * s.knockback, (dy / Math.max(d, 1)) * s.knockback);
+        const d = Math.max(Math.hypot(dx, dy), 1);
+        if (d > s.area + e.radius) continue;
+        w.dealDamage(e, s.damage, (dx / d) * s.knockback, (dy / d) * s.knockback);
         struck.add(e);
-        sweepHits++;
       }
-      // 一扫三敌返还 30% 冷却：怪越密锤越快
-      if (sweepHits >= 3) slot.timer = Math.max(slot.timer - s.cooldown * 0.3, 0.15);
-      // 闪电箭：锤击命中即放电，从被锤者跳向邻近敌人
+      // 一震三敌返还 30% 冷却：怪越密锤越快
+      if (struck.size >= 3) slot.timer = Math.max(slot.timer - s.cooldown * 0.3, 0.15);
+      // 闪电箭：锤击命中即放电，从被锤者跳向邻近敌人（每波最多两簇）
       if (slot.specials.includes('chainstrike')) {
         let sparks = 2;
         for (const e of struck) {
@@ -95,17 +84,7 @@ export const shamanHammer: WeaponModule = {
           hz.color = 0x8fd3ff;
         }
       }
-
-      const h = w.spawnHazard('sweep');
-      h.follow = false;
-      h.x = w.player.x;
-      h.y = w.player.y;
-      h.angle = angle;
-      h.r = reach;
-      h.dur = Math.max(s.duration, 0.18);
-      h.color = slot.def.color;
     }
     w.emitSfx('shoot');
-    void spawnAlly;
   },
 };
