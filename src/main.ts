@@ -3,6 +3,7 @@ import { BootScene } from './scenes/BootScene';
 import { MenuScene } from './scenes/MenuScene';
 import { GhostMarketScene } from './scenes/GhostMarketScene';
 import { BankScene } from './scenes/BankScene';
+import { LoadoutScene } from './scenes/LoadoutScene';
 import { DoorScene } from './scenes/DoorScene';
 import { ShopScene } from './scenes/ShopScene';
 import { GameScene } from './scenes/GameScene';
@@ -23,5 +24,5 @@ new Phaser.Game({
     autoCenter: Phaser.Scale.CENTER_BOTH,
   },
   // 渲染顺序即数组顺序：覆盖层（Doors/LevelUp/Result/Pause）必须排在 Game/UI 之后
-  scene: [BootScene, MenuScene, GhostMarketScene, BankScene, GameScene, UIScene, DoorScene, ShopScene, LevelUpScene, ResultScene, PauseScene],
+  scene: [BootScene, MenuScene, GhostMarketScene, BankScene, LoadoutScene, GameScene, UIScene, DoorScene, ShopScene, LevelUpScene, ResultScene, PauseScene],
 });

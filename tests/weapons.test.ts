@@ -22,7 +22,7 @@ globalThis.localStorage = new MemStorage() as unknown as Storage;
 import { describe, expect, it } from 'vitest';
 import { WEAPONS, BASE_WEAPONS, GENERIC_WEAPONS } from '../src/game/weapons/registry';
 import { computeWeaponStats } from '../src/game/weapons/shared';
-import { ORB_CAP } from '../src/data/orbs';
+import { EQUIP_CAP } from '../src/data/equipment';
 import { loadSave, persist, buy, equipWeapon } from '../src/game/save';
 import { makeWorld, fastForward } from './helpers';
 
@@ -163,15 +163,15 @@ describe('武器专属升级', () => {
 describe('宝珠（保留项抽查）', () => {
   it('鬼珠 + 风珠照常生效', () => {
     const w = makeWorld();
-    w.start('stages', { orbs: ['ghost', 'wind'] });
+    w.start('stages', { equips: ['ghost', 'wind'] });
     expect(w.player.stats.magnet).toBeCloseTo(140, 5);
     expect(w.player.stats.speed).toBeCloseTo(150 * 1.15, 5);
   });
 
   it('最多携带 2 颗', () => {
     const w = makeWorld();
-    w.start('stages', { orbs: ['blood', 'ghost', 'thunder', 'wind'] });
-    expect(w.orbIds).toHaveLength(ORB_CAP);
+    w.start('stages', { equips: ['blood', 'ghost', 'thunder', 'wind'] });
+    expect(w.equips).toHaveLength(EQUIP_CAP);
   });
 });
 

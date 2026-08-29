@@ -42,9 +42,12 @@ export function killEnemy(w: World, e: Enemy): void {
   w.events.onEnemyKilled?.(e);
   w.emitSfx('kill');
 
-  // 血珠：诛邪回血
-  if (w.orbIds.includes('blood')) {
-    w.player.hp = Math.min(w.player.stats.maxHp, w.player.hp + 1);
+  // 血珠 / 吸血镰刀：诛邪回血（镰刀 +2，与术士杖汲魂叠加）
+  let healPerKill = 0;
+  if (w.equips.includes('blood')) healPerKill += 1;
+  if (w.equips.includes('sickle')) healPerKill += 2;
+  if (healPerKill > 0) {
+    w.player.hp = Math.min(w.player.stats.maxHp, w.player.hp + healPerKill);
   }
 
   // 噬之鬼面：食魄疗己（闯幽冥面具强化）

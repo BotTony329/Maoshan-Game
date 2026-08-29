@@ -2,12 +2,12 @@
  * 存档 v4 —— 家底 + 武器库 + 地府金融账户。
  * V3→V4：道途(职业)体系删除，改为"道士+主武器"体系（weapons/equippedWeapon）。
  */
-import { ORB_CAP } from '../data/orbs';
+import { EQUIP_CAP } from '../data/equipment';
 import { DEFAULT_WEAPON, WEAPONS } from './weapons/registry';
 import { FX, STOCKS, WEALTH_PRODUCTS, initPrices, type StockPrices, type WealthHolding } from '../data/finance';
 import { MASK_MAX_LEVEL } from '../data/masks';
 
-const KEY = 'maoshan_save_v4';
+const KEY = 'maoshan_save_v5';
 
 export interface FinanceData {
   accountOpen: boolean;
@@ -25,8 +25,10 @@ export interface SaveData {
   weapons: string[];
   /** 当前装备的主武器 id */
   equippedWeapon: string;
-  orbs: string[];
-  equippedOrbs: string[];
+  /** 已购装备 id */
+  equipment: string[];
+  /** 本局携带的装备 id（≤ EQUIP_CAP） */
+  equipped: string[];
   bestStageTime: number;
   bestEndlessTime: number;
   runs: number;
@@ -51,8 +53,8 @@ const DEFAULT_SAVE: SaveData = {
   gold: 200,
   weapons: [DEFAULT_WEAPON],
   equippedWeapon: DEFAULT_WEAPON,
-  orbs: [],
-  equippedOrbs: [],
+  equipment: [],
+  equipped: [],
   bestStageTime: 0,
   bestEndlessTime: 0,
   runs: 0,
@@ -96,8 +98,8 @@ function sanitize(s: SaveData): void {
   if (!WEAPONS[s.equippedWeapon] || !s.weapons.includes(s.equippedWeapon)) {
     s.equippedWeapon = DEFAULT_WEAPON;
   }
-  s.orbs = [...new Set(s.orbs)];
-  s.equippedOrbs = s.equippedOrbs.filter((id) => s.orbs.includes(id)).slice(0, ORB_CAP);
+  s.equipment = [...new Set(s.equipment)];
+  s.equipped = s.equipped.filter((id) => s.equipment.includes(id)).slice(0, EQUIP_CAP);
   s.masks = s.masks ?? {};
   for (const lv of Object.values(s.masks)) {
     if (lv < 0 || lv > MASK_MAX_LEVEL) { s.masks = {}; break; }
@@ -115,10 +117,10 @@ function sanitize(s: SaveData): void {
   f.lastReport = Array.isArray(f.lastReport) ? f.lastReport : [];
 }
 
-/** 购买：宝珠/主武器共用。钱不够或已拥有返回 false */
-export function buy(kind: 'orb' | 'weapon', id: string, price: number): boolean {
+/** 购买：主武器/装备共用。钱不够或已拥有返回 false */
+export function buy(kind: 'weapon' | 'equip', id: string, price: number): boolean {
   const s = loadSave();
-  const list = kind === 'weapon' ? s.weapons : s.orbs;
+  const list = kind === 'weapon' ? s.weapons : s.equipment;
   if (list.includes(id) || s.gold < price) return false;
   s.gold -= price;
   list.push(id);
@@ -134,12 +136,13 @@ export function equipWeapon(id: string): void {
   persist();
 }
 
-export function toggleOrb(id: string): void {
+/** 勾选/取消携带一件装备（须已拥有，受 EQUIP_CAP 限制） */
+export function toggleEquip(id: string): void {
   const s = loadSave();
-  if (!s.orbs.includes(id)) return;
-  const i = s.equippedOrbs.indexOf(id);
-  if (i >= 0) s.equippedOrbs.splice(i, 1);
-  else if (s.equippedOrbs.length < ORB_CAP) s.equippedOrbs.push(id);
+  if (!s.equipment.includes(id)) return;
+  const i = s.equipped.indexOf(id);
+  if (i >= 0) s.equipped.splice(i, 1);
+  else if (s.equipped.length < EQUIP_CAP) s.equipped.push(id);
   persist();
 }
 

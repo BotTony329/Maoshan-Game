@@ -19,7 +19,7 @@ import {
 } from '../data/config';
 import { SHOP_ITEMS } from '../data/shop';
 import { MASKS } from '../data/masks';
-import { ORBS, ORB_CAP } from '../data/orbs';
+import { EQUIPMENT, EQUIP_CAP } from '../data/equipment';
 import { spendMingbi } from './save';
 import { ENEMIES } from '../data/enemies';
 import { WEAPONS, DEFAULT_WEAPON } from './weapons/registry';
@@ -103,7 +103,8 @@ export class World {
   modeStrategy: RunModeStrategy = modeStrategyFor('stages');
 
   // ---- 鬼市注入的局内配置
-  orbIds: string[] = [];
+  /** 鬼市装备的局内配置（≤ EQUIP_CAP） */
+  equips: string[] = [];
   maskLevels: Record<string, number> = {};
 
   // ---- 通用计数
@@ -180,7 +181,7 @@ export class World {
    */
   start(mode: RunMode = 'stages', loadout?: {
     weaponId?: string;
-    orbs?: string[];
+    equips?: string[];
     extraWeapons?: string[];
     masks?: Record<string, number>;
   }): void {
@@ -213,7 +214,7 @@ export class World {
     p.passives.clear();
 
     // 鬼市配置：装备的主武器（兜底符文）+ 宝珠 + 面具
-    this.orbIds = (loadout?.orbs ?? []).filter((id) => ORBS[id]).slice(0, ORB_CAP);
+    this.equips = (loadout?.equips ?? []).filter((id) => EQUIPMENT.some((e) => e.id === id)).slice(0, EQUIP_CAP);
     this.maskLevels = {};
     for (const [id, lv] of Object.entries(loadout?.masks ?? {})) {
       if (MASKS.some((m) => m.id === id) && lv > 0) this.maskLevels[id] = lv;
@@ -252,11 +253,11 @@ export class World {
   refreshStats(): void {
     recalcStats(this.player);
     const s = this.player.stats;
-    if (this.orbIds.includes('ghost')) {
+    if (this.equips.includes('ghost')) {
       s.magnet *= 2;
       s.xpGain *= 1.15;
     }
-    if (this.orbIds.includes('wind')) {
+    if (this.equips.includes('wind')) {
       s.speed *= 1.15;
       s.regen += 0.6;
     }
@@ -278,6 +279,9 @@ export class World {
       if (ml.vitality) s.maxHp += 20 * ml.vitality;
       s.damage *= 1 + 0.04 * (this.stage - 1);
     }
+    // 布鞋 / 玄铁护符（装备，两模式通用）
+    if (this.equips.includes('shoes')) s.speed *= 1.12;
+    if (this.equips.includes('charm')) s.armor += 2;
   }
 
   /** 推进一帧。dt 为秒；钳制由调用方（场景层）负责，测试允许大步进 */

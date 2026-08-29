@@ -2176,6 +2176,88 @@ function buildOrbIcons(scene: Phaser.Scene, add: Adder): void {
     symbol(c);
   };
 
+  // 吸血镰刀（装备）
+  add('icon_sickle', 32, 32, (c) => {
+    c.strokeStyle = '#8ac9a8';
+    c.lineWidth = 3.4;
+    c.beginPath();
+    c.arc(14, 16, 11, -Math.PI * 0.2, Math.PI * 0.75);
+    c.stroke();
+    c.strokeStyle = '#5c8a6c';
+    c.lineWidth = 4.6;
+    c.beginPath();
+    c.arc(14, 16, 11, Math.PI * 0.05, Math.PI * 0.35);
+    c.stroke();
+    c.strokeStyle = '#3a3226';
+    c.lineWidth = 3;
+    c.beginPath();
+    c.moveTo(20, 24);
+    c.lineTo(27, 29);
+    c.stroke();
+    c.fillStyle = '#d84343';
+    ell(c, 22, 12, 1.8, 2.6);
+    c.fill();
+  });
+
+  // 布鞋（装备）
+  add('icon_shoes', 32, 32, (c) => {
+    c.beginPath();
+    rr(c, 5, 16, 11, 9, 3);
+    fillStroke(c, '#c8b8e8', '#4a3a5c', 1.8);
+    c.beginPath();
+    rr(c, 17, 16, 10, 9, 3);
+    fillStroke(c, '#c8b8e8', '#4a3a5c', 1.8);
+    c.strokeStyle = '#4a3a5c';
+    c.lineWidth = 1.2;
+    for (const x of [8, 11, 20, 23]) {
+      c.beginPath();
+      c.moveTo(x, 18);
+      c.lineTo(x, 23);
+      c.stroke();
+    }
+  });
+
+  // 聚宝盆（装备）
+  add('icon_basin', 32, 32, (c) => {
+    c.beginPath();
+    c.moveTo(4, 14);
+    c.quadraticCurveTo(16, 22, 28, 14);
+    c.lineTo(24, 26);
+    c.lineTo(8, 26);
+    c.closePath();
+    fillStroke(c, '#8a6c3a', '#3a2c14', 2);
+    c.fillStyle = '#e8c33c';
+    ell(c, 12, 15, 3, 2.2);
+    c.fill();
+    ell(c, 20, 15, 3, 2.2);
+    c.fill();
+    ell(c, 16, 12, 3, 2.2);
+    c.fill();
+    c.strokeStyle = '#7a5c14';
+    c.lineWidth = 1;
+    c.stroke();
+  });
+
+  // 玄铁护符（装备）
+  add('icon_charm', 32, 32, (c) => {
+    c.beginPath();
+    c.moveTo(16, 4);
+    c.lineTo(27, 10);
+    c.quadraticCurveTo(26, 22, 16, 28);
+    c.quadraticCurveTo(6, 22, 5, 10);
+    c.closePath();
+    fillStroke(c, '#8a95a8', '#2a303a', 2);
+    c.fillStyle = '#3e4654';
+    ell(c, 16, 14, 3.4, 3.8);
+    c.fill();
+    c.strokeStyle = '#c8d0dc';
+    c.lineWidth = 1.4;
+    c.beginPath();
+    c.moveTo(16, 18);
+    c.lineTo(16, 25);
+    c.stroke();
+  });
+
   add('orb_blood', 32, 32, (c) => {
     bead(c, '#5c1f1f', '#a83232', (c2) => {
       c2.fillStyle = '#ffb0a0';

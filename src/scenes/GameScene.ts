@@ -84,14 +84,14 @@ export class GameScene extends Phaser.Scene {
     // 鬼市配置：装备的主武器/宝珠/传说/面具
     // 无头冒烟可用 ?weapon=id&orbs=id1,id2 覆盖
     const save = loadSave();
-    let loadout = { weaponId: save.equippedWeapon, orbs: save.equippedOrbs, extraWeapons: save.legendary, masks: save.masks };
+    let loadout = { weaponId: save.equippedWeapon, equips: save.equipped, extraWeapons: save.legendary, masks: save.masks };
     if (AUTOTEST) {
       const sp = new URLSearchParams(location.search);
       this.noAuto = sp.has('noauto');
       this.shopForce = sp.has('shopdoor');
       loadout = {
         weaponId: sp.get('weapon') ?? save.equippedWeapon,
-        orbs: sp.has('orbs') ? sp.get('orbs')!.split(',') : save.equippedOrbs,
+        equips: sp.has('orbs') ? sp.get('orbs')!.split(',') : save.equipped,
         extraWeapons: sp.has('godslayer') ? ['godslayer'] : save.legendary,
         masks: save.masks,
       };

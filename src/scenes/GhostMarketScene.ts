@@ -1,9 +1,9 @@
 import Phaser from 'phaser';
 import { BASE_WEAPONS } from '../game/weapons/registry';
-import { ORB_LIST, ORB_CAP } from '../data/orbs';
+import { EQUIPMENT, EQUIP_CAP } from '../data/equipment';
 import { MASKS, MASK_MAX_LEVEL, maskPrice } from '../data/masks';
 import { GODSLAYER_PRICE } from '../data/finance';
-import { buy, equipWeapon, toggleOrb, loadSave, buyLegendary, buyMask } from '../game/save';
+import { buy, equipWeapon, toggleEquip, loadSave, buyLegendary, buyMask } from '../game/save';
 import { sfx } from '../render/sfx';
 import {
   addBackButton,
@@ -162,10 +162,10 @@ export class GhostMarketScene extends Phaser.Scene {
       fontFamily: FONT, fontSize: '16px', color: '#d8c890',
     });
     this.renderArsenal();
-    this.add.text(72, 412, `【宝珠】携带 ≤ ${ORB_CAP} 颗（点击勾选/取消）`, {
+    this.add.text(72, 412, '【装备】两模式通用（购买后回主界面·背包勾选携带）', {
       fontFamily: FONT, fontSize: '16px', color: '#d8c890',
     });
-    this.renderOrbs();
+    this.renderEquipment();
   }
 
   private renderLegendary(width: number): void {
@@ -234,7 +234,7 @@ export class GhostMarketScene extends Phaser.Scene {
       } else if (active) {
         status.setText('✓ 已装备').setColor('#9fd88f');
       } else {
-        status.setText('点选装备').setColor('#8a9a86');
+        status.setText('已拥有').setColor('#8a9a86');
       }
 
       card.add([bg, iconBg, icon, name, desc, status]);
@@ -243,37 +243,35 @@ export class GhostMarketScene extends Phaser.Scene {
       card.on('pointerover', () => card.setScale(1.03));
       card.on('pointerout', () => card.setScale(1));
       card.on('pointerdown', () => {
-        if (!owned) {
-          if (buy('weapon', def.id, def.price ?? 0)) {
-            sfx.play('levelup');
-            equipWeapon(def.id);
-          } else {
-            this.flashGold();
-            return;
-          }
-        } else {
-          sfx.play('select');
-          equipWeapon(def.id);
+        if (owned) {
+          sfx.play('hit');
+          return;
         }
-        this.refreshGold();
-        this.scene.restart();
+        if (buy('weapon', def.id, def.price ?? 0)) {
+          sfx.play('levelup');
+          equipWeapon(def.id); // 鬼市买下即入库；装备去主界面背包页
+          this.refreshGold();
+          this.scene.restart();
+        } else {
+          this.flashGold();
+        }
       });
 
     });
   }
 
-  private renderOrbs(): void {
+  private renderEquipment(): void {
     const save = loadSave();
     const { width } = this.scale;
-    const cw = 218;
+    const cw = 194;
     const ch = 128;
-    const gap = 14;
-    const n = ORB_LIST.length;
+    const gap = 12;
+    const n = EQUIPMENT.length;
     const startX = width / 2 - (cw * n + gap * (n - 1)) / 2;
 
-    ORB_LIST.forEach((orb, i) => {
-      const owned = save.orbs.includes(orb.id);
-      const equipped = save.equippedOrbs.includes(orb.id);
+    EQUIPMENT.forEach((orb, i) => {
+      const owned = save.equipment.includes(orb.id);
+      const equipped = save.equipped.includes(orb.id);
       const cx = startX + cw / 2 + i * (cw + gap);
       const cy = 500;
       const card = this.add.container(cx, cy);
@@ -282,7 +280,7 @@ export class GhostMarketScene extends Phaser.Scene {
       bg.lineStyle(equipped ? 3 : 2, equipped ? 0x9fd88f : orb.color, 1)
         .strokeRoundedRect(-cw / 2, -ch / 2, cw, ch, 12);
 
-      const icon = this.add.image(-cw / 2 + 32, 0, orb.texture).setScale(1.6);
+      const icon = this.add.image(-cw / 2 + 32, 0, orb.icon).setScale(1.6);
       const name = this.add.text(-cw / 2 + 58, -ch / 2 + 16, orb.name, {
         fontFamily: FONT, fontSize: '18px', color: '#f0e8d0', stroke: '#141a14', strokeThickness: 4,
       });
@@ -305,16 +303,16 @@ export class GhostMarketScene extends Phaser.Scene {
       card.on('pointerout', () => card.setScale(1));
       card.on('pointerdown', () => {
         if (!owned) {
-          if (buy('orb', orb.id, orb.price)) {
+          if (buy('equip', orb.id, orb.price)) {
             sfx.play('levelup');
-            toggleOrb(orb.id);
+            toggleEquip(orb.id);
           } else {
             this.flashGold();
             return;
           }
         } else {
           sfx.play('select');
-          toggleOrb(orb.id);
+          toggleEquip(orb.id);
         }
         this.refreshGold();
         this.scene.restart();
@@ -322,7 +320,7 @@ export class GhostMarketScene extends Phaser.Scene {
 
     });
 
-    this.add.text(width - 72, 412, `已携带 ${save.equippedOrbs.length}/${ORB_CAP}`, {
+    this.add.text(width - 72, 412, `已携带 ${save.equipped.length}/${EQUIP_CAP}`, {
       fontFamily: FONT, fontSize: '14px', color: '#9fd88f',
     }).setOrigin(1, 0);
   }

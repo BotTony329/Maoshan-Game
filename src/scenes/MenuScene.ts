@@ -79,6 +79,25 @@ export class MenuScene extends Phaser.Scene {
       });
     });
 
+    // 背包（配装入口）：左下角
+    const bag = this.add.container(24, height - 62);
+    const bbg = this.add.graphics();
+    bbg.fillStyle(0x14100c, 0.92).fillRoundedRect(0, 0, 220, 40, 10);
+    bbg.lineStyle(2, 0x8ac9a8, 0.9).strokeRoundedRect(0, 0, 220, 40, 10);
+    const btx = this.add.text(110, 20, '🎒 背 包 · 配 装', {
+      fontFamily: UI_FONT, fontSize: '17px', color: '#c8e8b8',
+    }).setOrigin(0.5);
+    bag.add([bbg, btx]);
+    bag.setSize(220, 40);
+    bag.setInteractive({ useHandCursor: true });
+    bag.on('pointerover', () => this.tweens.add({ targets: bag, scale: 1.05, duration: 80 }));
+    bag.on('pointerout', () => this.tweens.add({ targets: bag, scale: 1, duration: 80 }));
+    bag.on('pointerdown', () => {
+      sfx.resume();
+      sfx.play('select');
+      this.scene.start('Loadout');
+    });
+
     this.add
       .text(width - 14, height - 10, 'v0.2', {
         fontFamily: UI_FONT, fontSize: '11px', color: '#667164',
@@ -93,6 +112,8 @@ export class MenuScene extends Phaser.Scene {
         else if (sp.has('bank')) {
           openAccount();
           this.scene.start('Bank');
+        } else if (sp.has('loadout')) {
+          this.scene.start('Loadout');
         } else {
           this.startMode(sp.get('mode') === 'endless' ? 'endless' : 'stages');
         }

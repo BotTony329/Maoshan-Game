@@ -83,7 +83,8 @@
 - 职业/宝珠属性加成走 `world.refreshStats()`；机制天赋读 `w.classId`；击杀来源走 dealDamage source → e.lastHitSource
 - marketOnly 武器不入升级池；弑神枪走 save.legendary + loadout.extraWeapons 每局自带
 - 闯幽冥难度 = 虚拟分钟 ((stage-1)*2 + stageTime/60)；无尽 = 真实分钟；TIMED_EVENTS 已删
-- 存档 KEY v3（finance: accountOpen/mingbi/rate/prices/holdings/wealth/lastReport）；financeTick 在 ResultScene 结算时推进
+- 存档 KEY v5（weapons/equippedWeapon/equipment/equipped 替代 orbs 与道途）；sanitize 是防手改档的最后防线，字段改名必须同步
+- dev server 长命会假黑屏（HMR 多轮后），重启 npm run dev 即愈——线上部署不受影响
 - 闯幽冥过关 = stageKills≥stageTarget 或 Boss 死（stageIsBoss 仅 Boss 房进门时置 true——曾漏置导致过关判定失效，踩过）；小怪房倍率走 pendingSpawnRate 两段式（进门重置会吞掉门效果，踩过）
 - 无尽模式 stage 恒 0（start 按 mode 设置）；UI 用 world.mode 区分显示
 - npm 缓存 `--cache /tmp/npm-cache-maoshan`；无头截图 `?autotest&ff=`（&market/&bank/&mode/&class/&orbs/&noauto/&godslayer）
@@ -106,6 +107,7 @@
 - D19：**V3 全面模块化**（用户要求"所有 function 模块化"）：systems 函数式(w,dt)、weapons 每武器一模块(def+tick+exclusives)、modes 策略接口；World 只留状态+管线+API。禁新增上帝类（2026-08-28）
 - D20：**职业→武器**（用户需求"不再选角色，给道士配武器"）：道途特质不删除而是转为主武器专属升级（汲魂/闪电箭/图腾/暴风雪/地狱犬/骷髅犬）；主武器鬼市武器库购买装备（2026-08-28）
 - D21：**搜打撤**（用户需求）：宝箱价值-概率反比表（10文30%→5000文2%）；携带不入账、撤离门（第5境起30%）全额结算、死亡只剩基础奖励；宝箱不吃磁吸必须亲自走过去（“搜”的实体化）（2026-08-28）
+- D22：**V4 配装流程**（用户需求"买了装备不在鬼市选，开局前选，一局3件"）：鬼市只购买；主界面新增背包按钮 → LoadoutScene 配主武器+≤3装备；两模式共用；游戏内锁定。宝珠并入统一装备池；新装备=吸血镰刀/布鞋/聚宝盆/玄铁护符（2026-08-29）
 - D19：**V2.6 分阶段美术接入**：用户选择方案 1；先完成五个 P0 角色和四个核心界面，截图确认后再扩展全量资产。玩法层冻结，仅允许 `public/art`、`src/render`、`src/scenes` 与美术文档变更（2026-08-28）
 - D20：**像素化方向修正**：用户反馈首批高清 Q 版“仍不够像素化”，明确要求靠近《吸血鬼幸存者》的低分辨率暗黑街机观感；运行时角色与 UI 边框均转为硬像素表达（2026-08-28）
 - D21：**V2.6 最终验收**：用户进入游戏实机查看后确认“目前这个风格可以接受”，要求完成替换与交接后停止，以便更新功能；因此保留当前五张运行贴图和 UI，未落库的低分辨率实验稿作废（2026-08-28）

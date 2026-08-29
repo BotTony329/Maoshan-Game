@@ -38,6 +38,7 @@ export class ResultScene extends Phaser.Scene {
       extracted,
     });
     if (mode === 'stages') earned = Math.round(earned * greedMult);
+    if (loadSave().equipped.includes('basin')) earned = Math.round(earned * 1.2);
     addGold(earned);
     recordRun(mode, world.time);
     financeTick(new Rng(Date.now() % 2147483647));

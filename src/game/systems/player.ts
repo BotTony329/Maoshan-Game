@@ -60,7 +60,7 @@ export function applyPlayerDamage(w: World, raw: number): number {
   w.emitSfx('hurt');
 
   // 焰珠：受击反炸一圈
-  if (w.orbIds.includes('flame') && w.flameCd <= 0) {
+  if (w.equips.includes('flame') && w.flameCd <= 0) {
     w.flameCd = 3;
     const ring = w.spawnHazard('ring');
     ring.x = p.x;
@@ -86,7 +86,7 @@ export function applyPlayerDamage(w: World, raw: number): number {
 export function updateOrbTriggers(w: World, dt: number): void {
   w.flameCd = Math.max(0, w.flameCd - dt);
 
-  if (w.orbIds.includes('thunder')) {
+  if (w.equips.includes('thunder')) {
     w.orbThunderT -= dt;
     if (w.orbThunderT <= 0) {
       w.orbThunderT = 6;
