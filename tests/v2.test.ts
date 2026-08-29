@@ -377,6 +377,17 @@ describe('搜打撤（宝箱与撤离门）', () => {
     expect(late).toBeLessThan(280);
   });
 
+  it('每轮必为 2~3 扇门且永远保底「下行之路」（不会被撤离门逼死）', () => {
+    for (let stage = 1; stage <= 10; stage++) {
+      for (let seed = 0; seed < 300; seed++) {
+        const doors = rollDoors(stage, new Rng(seed * 31 + stage));
+        expect(doors.length, `stage ${stage} seed ${seed}`).toBeGreaterThanOrEqual(2);
+        expect(doors.length).toBeLessThanOrEqual(3);
+        expect(doors.some((d) => d.id === 'next'), `stage ${stage} seed ${seed} 必有下行之路`).toBe(true);
+      }
+    }
+  });
+
   it('撤离：活着出去以胜利结算；金币结算含赃物与奖金', () => {
     const w = makeWorld(42);
     w.player.hp = 1e9;

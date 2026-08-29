@@ -46,32 +46,32 @@ export const DOORS: Record<DoorId, DoorDef> = {
   },
 };
 
-/** 掷门：一关亮 1~3 扇；冥品商店门仅入地府后 10% 独立判定混入 */
+/** 掷门：每轮必出 2~3 扇，「下行之路」永远在场作为保底；
+ *  特殊门（补给/小怪/Boss/商店/撤离）独立判定，超出名额时随机淘汰。
+ *  撤离门：第 5 境起 30% 出现——绝不强迫撤离，走不走由你。 */
 export function rollDoors(stage: number, rng: Rng): DoorDef[] {
-  const roll = rng.next();
-  const count = roll < 0.3 ? 3 : roll < 0.75 ? 2 : 1;
+  const count = rng.next() < 0.5 ? 2 : 3;
 
-  const pool: { id: DoorId; weight: number }[] = [
-    { id: 'next', weight: 5 },
-    { id: 'supply', weight: 2.5 },
-    { id: 'mob', weight: 2.5 },
-    { id: 'boss', weight: stage >= 2 ? 1.8 : 0.6 },
-  ];
-  const shopRoll = stage >= SHOP_DOOR.minStage && rng.next() < SHOP_DOOR.chance;
+  // 特殊门独立判定（各自通过概率才进入候选）
+  const rolled: DoorId[] = [];
+  if (stage >= 5 && rng.next() < 0.3) rolled.push('extract');
+  if (stage >= SHOP_DOOR.minStage && rng.next() < SHOP_DOOR.chance) rolled.push('shop');
+  if (stage >= 2 && rng.next() < 0.35) rolled.push('boss');
+  if (rng.next() < 0.4) rolled.push('mob');
+  if (rng.next() < 0.4) rolled.push('supply');
 
-  const picked: DoorId[] = [];
-  // 撤离门：第 5 境起 30% 独立判定（搜打撤的“撤”）
-  const extractRoll = stage >= 5 && rng.next() < 0.3;
-  if (count === 1 && !shopRoll && !extractRoll) {
-    picked.push('next'); // 唯一门且无商店/撤离时保底是路
+  const picked: DoorId[] = ['next']; // 保底：永远有路可走
+
+  // 已判定的特殊门按序入列（超出名额随机淘汰）
+  const shuffled = rng.shuffle(rolled);
+  while (picked.length < count && shuffled.length > 0) {
+    picked.push(shuffled.shift()!);
   }
-  if (shopRoll) picked.push('shop');
-  if (extractRoll) picked.push('extract');
-  while (picked.length < count) {
-    const avail = pool.filter((p) => !picked.includes(p.id));
-    if (avail.length === 0) break;
-    const chosen = rng.weightedPick(avail);
-    picked.push(chosen.id);
+  // 名额未满：从未入选的特殊门随机补位（保持类型多样性）
+  const rest = rng.shuffle((['mob', 'supply', 'boss', 'shop', 'extract'] as DoorId[])
+    .filter((d) => !picked.includes(d) && (d !== 'extract' || stage >= 5) && (d !== 'boss' || stage >= 2) && (d !== 'shop' || stage >= SHOP_DOOR.minStage)));
+  while (picked.length < count && rest.length > 0) {
+    picked.push(rest.shift()!);
   }
 
   // 打乱展示顺序，避免“好门永远在右边”
