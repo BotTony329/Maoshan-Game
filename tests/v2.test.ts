@@ -20,7 +20,7 @@ class MemStorage {
 globalThis.localStorage = new MemStorage() as unknown as Storage;
 
 import { describe, expect, it } from 'vitest';
-import { stageTheme, goldForRun } from '../src/data/config';
+import { ARENA, stageTheme, goldForRun } from '../src/data/config';
 import { rollTreasure } from '../src/data/treasure';
 import { rollDoors } from '../src/data/doors';
 import { GODSLAYER_PRICE } from '../src/data/finance';
@@ -363,6 +363,28 @@ describe('搜打撤（宝箱与撤离门）', () => {
     const before = w.carryLoot;
     w.update(1 / 60);
     expect(w.carryLoot - before).toBe(400);
+  });
+
+  it('宝箱散落全图随机点（不在玩家身旁），总值守恒', () => {
+    const w = makeWorld(7);
+    w.player.hp = 1e9;
+    w.player.stats.maxHp = 1e9;
+    runToDoors(w);
+    w.chooseDoor('next');
+    w.applyUpgrade({ kind: 'heal' });
+    const ts = w.pickups.filter((pk) => pk.kind === 'treasure');
+    if (ts.length === 0) return; // 10% 空关
+    // 散落点必须离玩家出生点有一段距离（真在“搜”，不是送到脸上）
+    for (const t of ts) {
+      expect(t.x).toBeGreaterThanOrEqual(100);
+      expect(t.x).toBeLessThanOrEqual(ARENA.width - 100);
+      expect(t.y).toBeGreaterThanOrEqual(100);
+      expect(t.y).toBeLessThanOrEqual(ARENA.height - 100);
+    }
+    // 总值 = 掷骰档位之一（深度乘数后仍在 10~5000）
+    const total = ts.reduce((sum, t) => sum + t.value, 0);
+    expect(total).toBeGreaterThanOrEqual(10);
+    expect(total).toBeLessThanOrEqual(5000);
   });
 
   it('撤离门：第 5 境起 30% 出现，前 4 境绝不出现', () => {

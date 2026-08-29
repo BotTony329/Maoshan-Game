@@ -651,19 +651,6 @@ export class GameScene extends Phaser.Scene {
     this.syncTotems(totems);
     this.syncBolts(strikes);
     this.drawAura();
-    this.drawTreasureBeacons();
-  }
-
-  /** 搜打撤：赃物光柱（clear 之后画，远处可见的“搜”目标） */
-  private drawTreasureBeacons(): void {
-    const g = this.hazardGfx;
-    for (const pk of this.world.pickups) {
-      if (pk.kind !== 'treasure') continue;
-      g.fillStyle(0xffd88a, 0.10).fillRect(pk.x - 12, pk.y - 220, 24, 220);
-      g.fillStyle(0xffd88a, 0.18).fillRect(pk.x - 6, pk.y - 220, 12, 220);
-      g.lineStyle(1.5, 0xffd88a, 0.5 + Math.sin(this.world.time * 5) * 0.2)
-        .strokeCircle(pk.x, pk.y, 16 + Math.sin(this.world.time * 5) * 3);
-    }
   }
 
   /** 正式法阵贴图叠在判定图形上；对象池避免高频技能反复分配精灵。 */

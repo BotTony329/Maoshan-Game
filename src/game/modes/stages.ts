@@ -2,7 +2,7 @@
  * 闯幽冥（stages）—— 击杀数过关、亮门抉择、杀穿地府。
  * 规则：不掉魂魄、无升级（成长来自过门奖励与鬼面具）；Boss 房斩杀 Boss 过关。
  */
-import { stageKillTarget } from '../../data/config';
+import { ARENA, stageKillTarget } from '../../data/config';
 import { rollTreasure } from '../../data/treasure';
 import { rollDoors } from '../../data/doors';
 import { generateOptions } from '../upgrades';
@@ -136,12 +136,17 @@ export function enterStage(w: World): void {
   for (const pk of w.pickups) pk.active = false;
   w.compactAll();
 
-  // 搜打撤·搜：本关随机位置刷新宝箱（价值随深度上浮，2% 出 5000 文大票）
-  const treasureValue = rollTreasure(w.stage, w.rng);
-  if (treasureValue > 0) {
-    const a = w.rng.range(0, Math.PI * 2);
-    const dist2p = w.rng.range(220, 460);
-    w.dropPickup('treasure', w.player.x + Math.cos(a) * dist2p, w.player.y + Math.sin(a) * dist2p, treasureValue);
+  // 搜打撤·搜：赃物散落在全图随机点（不吃磁吸，得亲自去找）
+  const total = rollTreasure(w.stage, w.rng);
+  if (total > 0) {
+    const bags = 1 + Math.floor(w.rng.range(0, 3)); // 1~3 袋
+    const per = Math.max(1, Math.round(total / bags));
+    for (let i = 0; i < bags; i++) {
+      const x = w.rng.range(100, ARENA.width - 100);
+      const y = w.rng.range(100, ARENA.height - 100);
+      // 末袋兜底，保证总值精确等于掷骰结果
+      w.dropPickup('treasure', x, y, i === bags - 1 ? total - per * (bags - 1) : per);
+    }
   }
 
   // Boss 房：开场即当前强度的 Boss（越深越硬）
